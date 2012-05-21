@@ -77,7 +77,7 @@ class Main extends Backend
 		$this->User->authenticate();
 
 		// Password change required
-		if ($this->User->pwChange)
+		if ($this->User->pwChange && !$this->User->adminUserSwitch)
 		{
 			$this->redirect('contao/password.php');
 		}

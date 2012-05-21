@@ -148,6 +148,7 @@ abstract class User extends Model
 		}
 
 		$this->setUserFromDb();
+		$this->adminUserSwitch = $objSession->adminUserSwitch;
 
 		// Update session
 		$this->Database->prepare("UPDATE tl_session SET tstamp=$time WHERE sessionID=?")
