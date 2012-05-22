@@ -499,7 +499,7 @@ CREATE TABLE `tl_session` (
   `sessionID` varchar(128) NOT NULL default '',
   `hash` varchar(40) NOT NULL default '',
   `ip` varchar(64) NOT NULL default '',
-  `adminUserSwitch` char(1) NOT NULL default '',
+  `su` char(1) NOT NULL default '',
   PRIMARY KEY  (`id`),
   KEY `pid` (`pid`),
   UNIQUE KEY `hash` (`hash`)

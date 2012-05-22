@@ -557,7 +557,7 @@ class tl_user extends Backend
 
 		if ($this->Input->get('key') == 'su' && $this->Input->get('id'))
 		{
-			$this->Database->prepare("UPDATE tl_session SET pid=?, adminUserSwitch='1' WHERE pid=?")
+			$this->Database->prepare("UPDATE tl_session SET pid=?, su='1' WHERE pid=?")
 						   ->execute($this->Input->get('id'), $this->User->id);
 
 			$this->redirect('contao/main.php');
