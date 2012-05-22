@@ -79,9 +79,10 @@ class Main extends Backend
 		// Password change required
 		if ($this->User->pwChange)
 		{
-			$objSession = $this->Database->prepare('SELECT su FROM tl_session WHERE sessionID=? AND pid=?')
-								->execute(session_id(),$this->User->id);
-			if($objSession->su != '1')
+			$objSession = $this->Database->prepare("SELECT su FROM tl_session WHERE sessionID=? AND pid=?")
+										 ->execute(session_id(), $this->User->id);
+
+			if(!$objSession->su)
 			{
 				$this->redirect('contao/password.php');
 			}
