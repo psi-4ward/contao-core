@@ -6,7 +6,7 @@
  * Copyright (C) 2005-2012 Leo Feyer
  * 
  * @package News
- * @link    http://www.contao.org
+ * @link    http://contao.org
  * @license http://www.gnu.org/licenses/lgpl-3.0.html LGPL
  */
 
@@ -39,7 +39,7 @@ class NewsArchiveModel extends \Model
 	 * 
 	 * @param array $arrIds An array of archive IDs
 	 * 
-	 * @return \Model_Collection|null A collection of models or null if there are no news archives
+	 * @return \Model\Collection|null A collection of models or null if there are no news archives
 	 */
 	public static function findMultipleByIds($arrIds)
 	{

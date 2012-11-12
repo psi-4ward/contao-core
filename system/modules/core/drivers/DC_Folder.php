@@ -6,7 +6,7 @@
  * Copyright (C) 2005-2012 Leo Feyer
  * 
  * @package Core
- * @link    http://www.contao.org
+ * @link    http://contao.org
  * @license http://www.gnu.org/licenses/lgpl-3.0.html LGPL
  */
 
@@ -22,7 +22,7 @@ namespace Contao;
  *
  * Provide methods to modify the file system.
  * @copyright  Leo Feyer 2005-2012
- * @author     Leo Feyer <http://www.contao.org>
+ * @author     Leo Feyer <http://contao.org>
  * @package    Core
  */
 class DC_Folder extends \DataContainer implements \listable, \editable
@@ -302,14 +302,14 @@ class DC_Folder extends \DataContainer implements \listable, \editable
 			$hrfNew = $GLOBALS['TL_DCA'][$this->strTable]['list']['new']['href'];
 		}
 
-		$imagePasteInto = $this->generateImage('pasteinto.gif', $GLOBALS['TL_LANG'][$this->strTable]['pasteinto'][0]);
+		$imagePasteInto = \Image::getHtml('pasteinto.gif', $GLOBALS['TL_LANG'][$this->strTable]['pasteinto'][0]);
 
 		// Build the tree
 		$return = '
 <div id="tl_buttons">'.((\Input::get('act') == 'select') ? '
-<a href="'.$this->getReferer(true).'" class="header_back" title="'.specialchars($GLOBALS['TL_LANG']['MSC']['backBTTitle']).'" accesskey="b" onclick="Backend.getScrollOffset()">'.$GLOBALS['TL_LANG']['MSC']['backBT'].'</a>' : '') . ((\Input::get('act') != 'select' && !$blnClipboard) ? '
-<a href="'.$this->addToUrl($hrfNew).'" class="'.$clsNew.'" title="'.specialchars($ttlNew).'" accesskey="n" onclick="Backend.getScrollOffset()">'.$lblNew.'</a>' . (!$GLOBALS['TL_DCA'][$this->strTable]['config']['closed'] ? ' &nbsp; :: &nbsp; <a href="'.$this->addToUrl('&amp;act=paste&amp;mode=move').'" class="header_new" title="'.specialchars($GLOBALS['TL_LANG'][$this->strTable]['move'][1]).'" onclick="Backend.getScrollOffset()">'.$GLOBALS['TL_LANG'][$this->strTable]['move'][0].'</a>' : '') . $this->generateGlobalButtons(true) : '') . ($blnClipboard ? '<a href="'.$this->addToUrl('clipboard=1').'" class="header_clipboard" title="'.specialchars($GLOBALS['TL_LANG']['MSC']['clearClipboard']).'" accesskey="x">'.$GLOBALS['TL_LANG']['MSC']['clearClipboard'].'</a>' : '') . '
-</div>' . ((\Input::get('act') == 'select') ? '
+<a href="'.$this->getReferer(true).'" class="header_back" title="'.specialchars($GLOBALS['TL_LANG']['MSC']['backBTTitle']).'" accesskey="b" onclick="Backend.getScrollOffset()">'.$GLOBALS['TL_LANG']['MSC']['backBT'].'</a> ' : '') . ((\Input::get('act') != 'select' && !$blnClipboard) ? '
+<a href="'.$this->addToUrl($hrfNew).'" class="'.$clsNew.'" title="'.specialchars($ttlNew).'" accesskey="n" onclick="Backend.getScrollOffset()">'.$lblNew.'</a> ' . (!$GLOBALS['TL_DCA'][$this->strTable]['config']['closed'] ? '<a href="'.$this->addToUrl('&amp;act=paste&amp;mode=move').'" class="header_new" title="'.specialchars($GLOBALS['TL_LANG'][$this->strTable]['move'][1]).'" onclick="Backend.getScrollOffset()">'.$GLOBALS['TL_LANG'][$this->strTable]['move'][0].'</a> ' : '') . $this->generateGlobalButtons(true) : '') . ($blnClipboard ? '<a href="'.$this->addToUrl('clipboard=1').'" class="header_clipboard" title="'.specialchars($GLOBALS['TL_LANG']['MSC']['clearClipboard']).'" accesskey="x">'.$GLOBALS['TL_LANG']['MSC']['clearClipboard'].'</a> ' : '') . '
+</div>' . \Message::generate(true) . ((\Input::get('act') == 'select') ? '
 
 <form action="'.ampersand(\Environment::get('request'), true).'" id="tl_select" class="tl_form" method="post">
 <div class="tl_formbody">
@@ -327,7 +327,7 @@ class DC_Folder extends \DataContainer implements \listable, \editable
 </div>' : '').'
 
 <ul class="tl_listing">
-  <li class="tl_folder_top" onmouseover="Theme.hoverDiv(this,1)" onmouseout="Theme.hoverDiv(this,0)"><div class="tl_left">'.$this->generateImage('filemounts.gif').' '.$GLOBALS['TL_LANG']['MSC']['filetree'].'</div> <div class="tl_right">'.(($blnClipboard && empty($this->arrFilemounts) && !is_array($GLOBALS['TL_DCA'][$this->strTable]['list']['sorting']['root']) && $GLOBALS['TL_DCA'][$this->strTable]['list']['sorting']['root'] !== false) ? '<a href="'.$this->addToUrl('&amp;act='.$arrClipboard['mode'].'&amp;mode=2&amp;pid='.$GLOBALS['TL_CONFIG']['uploadPath'].(!is_array($arrClipboard['id']) ? '&amp;id='.$arrClipboard['id'] : '')).'" title="'.specialchars($GLOBALS['TL_LANG'][$this->strTable]['pasteinto'][1]).'" onclick="Backend.getScrollOffset()">'.$imagePasteInto.'</a>' : '&nbsp;').'</div><div style="clear:both"></div></li>'.$return.'
+  <li class="tl_folder_top" onmouseover="Theme.hoverDiv(this,1)" onmouseout="Theme.hoverDiv(this,0)"><div class="tl_left">'.\Image::getHtml('filemounts.gif').' '.$GLOBALS['TL_LANG']['MSC']['filetree'].'</div> <div class="tl_right">'.(($blnClipboard && empty($this->arrFilemounts) && !is_array($GLOBALS['TL_DCA'][$this->strTable]['list']['sorting']['root']) && $GLOBALS['TL_DCA'][$this->strTable]['list']['sorting']['root'] !== false) ? '<a href="'.$this->addToUrl('&amp;act='.$arrClipboard['mode'].'&amp;mode=2&amp;pid='.$GLOBALS['TL_CONFIG']['uploadPath'].(!is_array($arrClipboard['id']) ? '&amp;id='.$arrClipboard['id'] : '')).'" title="'.specialchars($GLOBALS['TL_LANG'][$this->strTable]['pasteinto'][1]).'" onclick="Backend.getScrollOffset()">'.$imagePasteInto.'</a>' : '&nbsp;').'</div><div style="clear:both"></div></li>'.$return.'
 </ul>
 
 </div>';
@@ -592,7 +592,7 @@ class DC_Folder extends \DataContainer implements \listable, \editable
 			if ($this->blnIsDbAssisted)
 			{
 				$objFolder = \FilesModel::findByPath($source);
-				$objNewFolder = clone $objFolder;
+				$objNewFolder = clone $objFolder->current();
 
 				// Set the parent ID
 				if ($strFolder == $GLOBALS['TL_CONFIG']['uploadPath'])
@@ -608,6 +608,7 @@ class DC_Folder extends \DataContainer implements \listable, \editable
 				// Update the database
 				$objNewFolder->tstamp = time();
 				$objNewFolder->path = $destination;
+				$objNewFolder->name = basename($destination); // see #4628
 				$objNewFolder->save();
 			}
 
@@ -633,7 +634,7 @@ class DC_Folder extends \DataContainer implements \listable, \editable
 					if ($this->blnIsDbAssisted)
 					{
 						$objFile = \FilesModel::findByPath($source . '/' . $file);
-						$objNewFile = clone $objFile;
+						$objNewFile = clone $objFile->current();
 
 						// Update the database
 						$objNewFile->pid = $objNewFolder->id;
@@ -653,8 +654,8 @@ class DC_Folder extends \DataContainer implements \listable, \editable
 
 			while (file_exists(TL_ROOT . '/' . $new) && $count < 12)
 			{
-				$pif = pathinfo($destination);
-				$new = str_replace('.' . $pif['extension'], '_' . $count++ . '.' . $pif['extension'], $destination);
+				$ext = pathinfo($destination, PATHINFO_EXTENSION);
+				$new = str_replace('.' . $ext, '_' . $count++ . '.' . $ext, $destination);
 			}
 
 			$destination = $new;
@@ -665,7 +666,7 @@ class DC_Folder extends \DataContainer implements \listable, \editable
 			if ($this->blnIsDbAssisted)
 			{
 				$objFile = \FilesModel::findByPath($source);
-				$objNewFile = clone $objFile;
+				$objNewFile = clone $objFile->current();
 
 				// Set the parent ID
 				if ($strFolder == $GLOBALS['TL_CONFIG']['uploadPath'])
@@ -681,18 +682,19 @@ class DC_Folder extends \DataContainer implements \listable, \editable
 				// Update the database
 				$objNewFile->tstamp = time();
 				$objNewFile->path = $destination;
+				$objNewFile->name = basename($destination); // see #4628
 				$objNewFile->save();
-			}
 
-			$strPath = dirname($destination);
+				$strPath = dirname($destination);
 
-			// Update the MD5 hash of the parent folder
-			if ($strPath != $GLOBALS['TL_CONFIG']['uploadPath'])
-			{
-				$objModel = \FilesModel::findByPath($strPath);
-				$objFolder = new \Folder($objModel->path);
-				$objModel->hash = $objFolder->hash;
-				$objModel->save();
+				// Update the MD5 hash of the parent folder
+				if ($strPath != $GLOBALS['TL_CONFIG']['uploadPath'])
+				{
+					$objModel = \FilesModel::findByPath($strPath);
+					$objFolder = new \Folder($objModel->path);
+					$objModel->hash = $objFolder->hash;
+					$objModel->save();
+				}
 			}
 		}
 
@@ -796,7 +798,15 @@ class DC_Folder extends \DataContainer implements \listable, \editable
 					if ($this->blnIsDbAssisted && $file != '.DS_Store')
 					{
 						$objFile = \FilesModel::findByPath($source . '/' . $file);
-						$objFile->delete();
+
+						if ($objFile !== null)
+						{
+							$objFile->delete();
+						}
+						else
+						{
+							\Message::addError(sprintf($GLOBALS['TL_LANG']['ERR']['fileNotFoundSync'], $source . '/' . $file));
+						}
 					}
 				}
 			}
@@ -807,7 +817,15 @@ class DC_Folder extends \DataContainer implements \listable, \editable
 			if ($this->blnIsDbAssisted && $source != '.svn')
 			{
 				$objFile = \FilesModel::findByPath($source);
-				$objFile->delete();
+
+				if ($objFile !== null)
+				{
+					$objFile->delete();
+				}
+				else
+				{
+					\Message::addError(sprintf($GLOBALS['TL_LANG']['ERR']['fileNotFoundSync'], $source));
+				}
 			}
 		}
 
@@ -820,7 +838,15 @@ class DC_Folder extends \DataContainer implements \listable, \editable
 			if ($this->blnIsDbAssisted)
 			{
 				$objFile = \FilesModel::findByPath($source);
-				$objFile->delete();
+
+				if ($objFile !== null)
+				{
+					$objFile->delete();
+				}
+				else
+				{
+					\Message::addError(sprintf($GLOBALS['TL_LANG']['ERR']['fileNotFoundSync'], $source));
+				}
 			}
 		}
 
@@ -917,7 +943,7 @@ class DC_Folder extends \DataContainer implements \listable, \editable
 		$class = $this->User->uploader;
 
 		// See #4086
-		if (!$this->classFileExists($class))
+		if (!class_exists($class))
 		{
 			$class = 'FileUpload';
 		}
@@ -927,7 +953,7 @@ class DC_Folder extends \DataContainer implements \listable, \editable
 		// Process the uploaded files
 		if (\Input::post('FORM_SUBMIT') == 'tl_upload')
 		{
-			$arrUploaded = $objUploader->uploadTo($strFolder, 'files');
+			$arrUploaded = $objUploader->uploadTo($strFolder);
 
 			// Generate the DB entries
 			if ($this->blnIsDbAssisted)
@@ -945,17 +971,30 @@ class DC_Folder extends \DataContainer implements \listable, \editable
 
 				foreach ($arrUploaded as $strFile)
 				{
-					$objFile = new \File($strFile);
+					$objFile = \FilesModel::findByPath($strFile);
 
-					$objNew = new \FilesModel();
-					$objNew->pid       = $pid;
-					$objNew->tstamp    = time();
-					$objNew->type      = 'file';
-					$objNew->path      = $strFile;
-					$objNew->extension = $objFile->extension;
-					$objNew->hash      = md5_file(TL_ROOT . '/' . $strFile);
-					$objNew->name      = $objFile->basename;
-					$objNew->save();
+					// Existing file is being replaced (see #4818)
+					if ($objFile !== null)
+					{
+						$objFile->tstamp = time();
+						$objFile->path   = $strFile;
+						$objFile->hash   = md5_file(TL_ROOT . '/' . $strFile);
+						$objFile->save();
+					}
+					else
+					{
+						$objFile = new \File($strFile);
+
+						$objNew = new \FilesModel();
+						$objNew->pid       = $pid;
+						$objNew->tstamp    = time();
+						$objNew->type      = 'file';
+						$objNew->path      = $strFile;
+						$objNew->extension = $objFile->extension;
+						$objNew->hash      = md5_file(TL_ROOT . '/' . $strFile);
+						$objNew->name      = $objFile->basename;
+						$objNew->save();
+					}
 				}
 			}
 
@@ -1231,7 +1270,7 @@ class DC_Folder extends \DataContainer implements \listable, \editable
 <select name="version" class="tl_select">'.$versions.'
 </select> 
 <input type="submit" name="showVersion" id="showVersion" class="tl_submit" value="'.specialchars($GLOBALS['TL_LANG']['MSC']['restore']).'"> 
-<a href="contao/diff.php?table='.$this->strTable.'&amp;pid='.$objFile->id.'" title="'.specialchars($GLOBALS['TL_LANG']['MSC']['showDifferences']).'" onclick="Backend.openModalIframe({\'width\':860,\'title\':\''.specialchars($GLOBALS['TL_LANG']['MSC']['showDifferences']).'\',\'url\':this.href});return false">'.$this->generateImage('diff.gif').'</a>
+<a href="contao/diff.php?table='.$this->strTable.'&amp;pid='.$objFile->id.'" title="'.specialchars($GLOBALS['TL_LANG']['MSC']['showDifferences']).'" onclick="Backend.openModalIframe({\'width\':860,\'title\':\''.specialchars(str_replace("'", "\\'", $GLOBALS['TL_LANG']['MSC']['showDifferences'])).'\',\'url\':this.href});return false">'.\Image::getHtml('diff.gif').'</a>
 </div>
 </form>
 
@@ -1256,7 +1295,7 @@ class DC_Folder extends \DataContainer implements \listable, \editable
 
 <script>
 window.addEvent(\'domready\', function() {
-  (inp = $(\''.$this->strTable.'\').getElement(\'input[type="text"]\')) && inp.focus();
+  (inp = $(\''.$this->strTable.'\').getElement(\'input[class^="tl_text"]\')) && inp.focus();
 });
 </script>';
 
@@ -1523,7 +1562,7 @@ window.addEvent(\'domready\', function() {
 
 <script>
 window.addEvent(\'domready\', function() {
-  (inp = $(\''.$this->strTable.'\').getElement(\'input[type="text"]\')) && inp.focus();
+  (inp = $(\''.$this->strTable.'\').getElement(\'input[class^="tl_text"]\')) && inp.focus();
 });
 </script>';
 
@@ -1940,15 +1979,9 @@ window.addEvent(\'domready\', function() {
 			}
 
 			// Make sure unique fields are unique
-			if ($varValue != '' && $arrData['eval']['unique'])
+			if ($arrData['eval']['unique'] && $varValue != '' && !$this->Database->isUniqueValue($this->strTable, $this->strField, $varValue, $this->objActiveRecord->id))
 			{
-				$objUnique = $this->Database->prepare("SELECT * FROM " . $this->strTable . " WHERE " . $this->strField . "=? AND id!=?")
-											->execute($varValue, $this->objActiveRecord->id);
-
-				if ($objUnique->numRows)
-				{
-					throw new \Exception(sprintf($GLOBALS['TL_LANG']['ERR']['unique'], $arrData['label'][0] ?: $this->strField));
-				}
+				throw new \Exception(sprintf($GLOBALS['TL_LANG']['ERR']['unique'], $arrData['label'][0] ?: $this->strField));
 			}
 
 			// Handle multi-select fields in "override all" mode
@@ -2039,13 +2072,30 @@ window.addEvent(\'domready\', function() {
 			return '';
 		}
 
+		$this->import('BackendUser', 'User');
+
+		// Stop if a regular user manually triggers the file synchronisation
+		if (!$this->User->isAdmin)
+		{
+			return '<p class="tl_error">You have to be an administrator to run the file synchronisation.</p>';
+		}
+
+		$arrExempt = array();
 		$this->arrMessages = array();
 
 		// Reset the "found" flag
 		$this->Database->query("UPDATE tl_files SET found=''");
 
+		// Exempt folders from the synchronisation (see #4522)
+		if ($GLOBALS['TL_CONFIG']['fileSyncExclude'] != '')
+		{
+			$arrExempt = array_map(function($e) {
+				return $GLOBALS['TL_CONFIG']['uploadPath'] . '/' . $e;
+			}, trimsplit(',', $GLOBALS['TL_CONFIG']['fileSyncExclude']));
+		}
+
 		// Traverse the file system
-		$this->execSync($GLOBALS['TL_CONFIG']['uploadPath']);
+		$this->execSync($GLOBALS['TL_CONFIG']['uploadPath'], 0, $arrExempt);
 
 		// Check for left-over entries in the DB
 		$objFiles = \FilesModel::findByFound('');
@@ -2082,7 +2132,6 @@ window.addEvent(\'domready\', function() {
 					$objFolder->name   = $objFound->name;
 					$objFolder->type   = $objFound->type;
 					$objFolder->path   = $objFound->path;
-					$objFolder->save();
 
 					// Update the PID of the child records
 					$objChildren = \FilesModel::findByPid($objFound->id);
@@ -2098,6 +2147,9 @@ window.addEvent(\'domready\', function() {
 
 					// Delete the newer (duplicate) entry
 					$objFound->delete();
+
+					// Then save the modified original entry (prevents duplicate key errors)
+					$objFolder->save();
 				}
 				else
 				{
@@ -2122,10 +2174,12 @@ window.addEvent(\'domready\', function() {
 					$objFile->name   = $objFound->name;
 					$objFile->type   = $objFound->type;
 					$objFile->path   = $objFound->path;
-					$objFile->save();
 
 					// Delete the newer (duplicate) entry
 					$objFound->delete();
+
+					// Then save the modified original entry (prevents duplicate key errors)
+					$objFile->save();
 				}
 				else
 				{
@@ -2167,10 +2221,17 @@ window.addEvent(\'domready\', function() {
 	 * Recursively synchronize the file system
 	 * @param string
 	 * @param integer
+	 * @param array
 	 */
-	protected function execSync($strPath, $intPid=0)
+	protected function execSync($strPath, $intPid=0, $arrExempt=array())
 	{
 		if (!$this->blnIsDbAssisted)
+		{
+			return;
+		}
+
+		// Exempt folders (see #4522)
+		if (in_array($strPath, $arrExempt))
 		{
 			return;
 		}
@@ -2200,6 +2261,12 @@ window.addEvent(\'domready\', function() {
 		// Folders
 		foreach ($arrFolders as $strFolder)
 		{
+			// Exempt folders (see #4522)
+			if (in_array($strFolder, $arrExempt))
+			{
+				continue;
+			}
+
 			$objFolder = new \Folder($strFolder);
 			$objModel = \FilesModel::findByPath($strFolder);
 
@@ -2233,7 +2300,7 @@ window.addEvent(\'domready\', function() {
 				$this->arrMessages[] = '<p class="tl_confirm">' . sprintf($GLOBALS['TL_LANG']['tl_files']['syncFolderF'], $strFolder) . '</p>';
 			}
 
-			$this->execSync($strFolder, $objModel->id);
+			$this->execSync($strFolder, $objModel->id, $arrExempt);
 		}
 
 		// Files
@@ -2421,20 +2488,20 @@ window.addEvent(\'domready\', function() {
 			{
 				$img = ($session['filetree'][$md5] == 1) ? 'folMinus.gif' : 'folPlus.gif';
 				$alt = ($session['filetree'][$md5] == 1) ? $GLOBALS['TL_LANG']['MSC']['collapseNode'] : $GLOBALS['TL_LANG']['MSC']['expandNode'];
-				$return .= '<a href="'.$this->addToUrl('tg='.$md5).'" title="'.specialchars($alt).'" onclick="Backend.getScrollOffset(); return AjaxRequest.toggleFileManager(this, \'filetree_'.$md5.'\', \''.$currentFolder.'\', '.$level.')">'.$this->generateImage($img, '', 'style="margin-right:2px"').'</a>';
+				$return .= '<a href="'.$this->addToUrl('tg='.$md5).'" title="'.specialchars($alt).'" onclick="Backend.getScrollOffset(); return AjaxRequest.toggleFileManager(this, \'filetree_'.$md5.'\', \''.$currentFolder.'\', '.$level.')">'.\Image::getHtml($img, '', 'style="margin-right:2px"').'</a>';
 			}
 
 			$protected = ($blnProtected === true || array_search('.htaccess', $content) !== false) ? true : false;
 			$folderImg = ($session['filetree'][$md5] == 1 && $countFiles > 0) ? ($protected ? 'folderOP.gif' : 'folderO.gif') : ($protected ? 'folderCP.gif' : 'folderC.gif');
 
 			// Add the current folder
-			$return .= $this->generateImage($folderImg, '').' <a href="' . $this->addToUrl('node='.$currentEncoded) . '" title="'.specialchars($GLOBALS['TL_LANG']['MSC']['selectNode']).'"><strong>'.specialchars(basename($currentFolder)).'</strong></a></div> <div class="tl_right">';
+			$return .= \Image::getHtml($folderImg, '').' <a href="' . $this->addToUrl('node='.$currentEncoded) . '" title="'.specialchars($GLOBALS['TL_LANG']['MSC']['selectNode']).'"><strong>'.specialchars(basename($currentFolder)).'</strong></a></div> <div class="tl_right">';
 
 			// Paste buttons
 			if ($arrClipboard !== false && \Input::get('act') != 'select')
 			{
-				$imagePasteInto = $this->generateImage('pasteinto.gif', $GLOBALS['TL_LANG'][$this->strTable]['pasteinto'][0]);
-				$return .= (($arrClipboard['mode'] == 'cut' || $arrClipboard['mode'] == 'copy') && preg_match('/^' . preg_quote($arrClipboard['id'], '/') . '/i', $currentFolder)) ? $this->generateImage('pasteinto_.gif') : '<a href="'.$this->addToUrl('act='.$arrClipboard['mode'].'&amp;mode=2&amp;pid='.$currentEncoded.(!is_array($arrClipboard['id']) ? '&amp;id='.$arrClipboard['id'] : '')).'" title="'.specialchars($GLOBALS['TL_LANG'][$this->strTable]['pasteinto'][1]).'" onclick="Backend.getScrollOffset()">'.$imagePasteInto.'</a> ';
+				$imagePasteInto = \Image::getHtml('pasteinto.gif', $GLOBALS['TL_LANG'][$this->strTable]['pasteinto'][0]);
+				$return .= (($arrClipboard['mode'] == 'cut' || $arrClipboard['mode'] == 'copy') && preg_match('/^' . preg_quote($arrClipboard['id'], '/') . '/i', $currentFolder)) ? \Image::getHtml('pasteinto_.gif') : '<a href="'.$this->addToUrl('act='.$arrClipboard['mode'].'&amp;mode=2&amp;pid='.$currentEncoded.(!is_array($arrClipboard['id']) ? '&amp;id='.$arrClipboard['id'] : '')).'" title="'.specialchars($GLOBALS['TL_LANG'][$this->strTable]['pasteinto'][1]).'" onclick="Backend.getScrollOffset()">'.$imagePasteInto.'</a> ';
 			}
 			// Default buttons (do not display buttons for mounted folders)
 			elseif (!$mount)
@@ -2496,11 +2563,11 @@ window.addEvent(\'domready\', function() {
 			// No popup links for templates and in the popup file manager
 			if ($this->strTable == 'tl_templates' || basename(\Environment::get('scriptName')) == 'files.php')
 			{
-				$return .= $this->generateImage($objFile->icon).' '.$strFileNameEncoded.$thumbnail.'</div> <div class="tl_right">';
+				$return .= \Image::getHtml($objFile->icon).' '.$strFileNameEncoded.$thumbnail.'</div> <div class="tl_right">';
 			}
 			else
 			{
-				$return .= '<a href="contao/popup.php?src='.base64_encode($currentEncoded).'" title="'.specialchars($GLOBALS['TL_LANG']['MSC']['view']).'" onclick="Backend.openModalIframe({\'width\':'.$popupWidth.',\'title\':\''.$strFileNameEncoded.'\',\'url\':this.href,\'height\':'.$popupHeight.'});return false">' . $this->generateImage($objFile->icon, $objFile->mime).'</a> '.$strFileNameEncoded.$thumbnail.'</div> <div class="tl_right">';
+				$return .= '<a href="contao/popup.php?src='.base64_encode($currentEncoded).'" title="'.specialchars($GLOBALS['TL_LANG']['MSC']['view']).'" onclick="Backend.openModalIframe({\'width\':'.$popupWidth.',\'title\':\''.str_replace("'", "\\'", $strFileNameEncoded).'\',\'url\':this.href,\'height\':'.$popupHeight.'});return false">' . \Image::getHtml($objFile->icon, $objFile->mime).'</a> '.$strFileNameEncoded.$thumbnail.'</div> <div class="tl_right">';
 			}
 
 			// Buttons

@@ -6,7 +6,7 @@
  * Copyright (C) 2005-2012 Leo Feyer
  * 
  * @package Core
- * @link    http://www.contao.org
+ * @link    http://contao.org
  * @license http://www.gnu.org/licenses/lgpl-3.0.html LGPL
  */
 
@@ -22,7 +22,7 @@ namespace Contao;
  *
  * File upload field.
  * @copyright  Leo Feyer 2005-2012
- * @author     Leo Feyer <http://www.contao.org>
+ * @author     Leo Feyer <http://contao.org>
  * @package    Core
  */
 class FormFileUpload extends \Widget implements \uploadable
@@ -133,14 +133,14 @@ class FormFileUpload extends \Widget implements \uploadable
 			return;
 		}
 
-		$pathinfo = pathinfo($file['name']);
+		$strExtension = pathinfo($file['name'], PATHINFO_EXTENSION);
 		$uploadTypes = trimsplit(',', $this->extensions);
 
 		// File type is not allowed
-		if (!in_array(strtolower($pathinfo['extension']), $uploadTypes))
+		if (!in_array(strtolower($strExtension), $uploadTypes))
 		{
-			$this->addError(sprintf($GLOBALS['TL_LANG']['ERR']['filetype'], $pathinfo['extension']));
-			$this->log('File type "'.$pathinfo['extension'].'" is not allowed to be uploaded ('.$file['name'].')', 'FormFileUpload validate()', TL_ERROR);
+			$this->addError(sprintf($GLOBALS['TL_LANG']['ERR']['filetype'], $strExtension));
+			$this->log('File type "'.$strExtension.'" is not allowed to be uploaded ('.$file['name'].')', 'FormFileUpload validate()', TL_ERROR);
 
 			unset($_FILES[$this->strName]);
 			return;
@@ -220,7 +220,7 @@ class FormFileUpload extends \Widget implements \uploadable
 					}
 
 					$this->Files->move_uploaded_file($file['tmp_name'], $strUploadFolder . '/' . $file['name']);
-					$this->Files->chmod($strUploadFolder . '/' . $file['name'], 0644);
+					$this->Files->chmod($strUploadFolder . '/' . $file['name'], $GLOBALS['TL_CONFIG']['defaultFileChmod']);
 
 					$_SESSION['FILES'][$this->strName] = array
 					(

@@ -6,7 +6,7 @@
  * Copyright (C) 2005-2012 Leo Feyer
  * 
  * @package Core
- * @link    http://www.contao.org
+ * @link    http://contao.org
  * @license http://www.gnu.org/licenses/lgpl-3.0.html LGPL
  */
 
@@ -22,7 +22,7 @@ namespace Contao;
  *
  * Provide methods to handle front end forms.
  * @copyright  Leo Feyer 2005-2012
- * @author     Leo Feyer <http://www.contao.org>
+ * @author     Leo Feyer <http://contao.org>
  * @package    Core
  */
 class Form extends \Hybrid
@@ -105,7 +105,7 @@ class Form extends \Hybrid
 				$strClass = $GLOBALS['TL_FFL'][$objFields->type];
 
 				// Continue if the class is not defined
-				if (!$this->classFileExists($strClass))
+				if (!class_exists($strClass))
 				{
 					continue;
 				}
@@ -132,6 +132,15 @@ class Form extends \Hybrid
 					$arrData['name'] = '';
 				}
 
+				// Unset the default value depending on the field type (see #4722)
+				if (!empty($arrData['value']))
+				{
+					if (!in_array('value', trimsplit('[,;]', $GLOBALS['TL_DCA']['tl_form_field']['palettes'][$objFields->type])))
+					{
+						$arrData['value'] = '';
+					}
+				}
+
 				$objWidget = new $strClass($arrData);
 				$objWidget->required = $objFields->mandatory ? true : false;
 
@@ -141,7 +150,7 @@ class Form extends \Hybrid
 					foreach ($GLOBALS['TL_HOOKS']['loadFormField'] as $callback)
 					{
 						$this->import($callback[0]);
-						$objWidget = $this->$callback[0]->$callback[1]($objWidget, $formId, $this->arrData);
+						$objWidget = $this->$callback[0]->$callback[1]($objWidget, $formId, $this->arrData, $this);
 					}
 				}
 
@@ -156,7 +165,7 @@ class Form extends \Hybrid
 						foreach ($GLOBALS['TL_HOOKS']['validateFormField'] as $callback)
 						{
 							$this->import($callback[0]);
-							$objWidget = $this->$callback[0]->$callback[1]($objWidget, $formId, $this->arrData);
+							$objWidget = $this->$callback[0]->$callback[1]($objWidget, $formId, $this->arrData, $this);
 						}
 					}
 
@@ -204,7 +213,7 @@ class Form extends \Hybrid
 		}
 
 		// Add a warning to the page title
-		if ($doNotSubmit && !\Environment::get('isAjax'))
+		if ($doNotSubmit && !\Environment::get('isAjaxRequest'))
 		{
 			global $objPage;
 			$title = $objPage->pageTitle ?: $objPage->title;
@@ -224,7 +233,7 @@ class Form extends \Hybrid
 		$this->Template->attributes = $strAttributes;
 		$this->Template->enctype = $hasUpload ? 'multipart/form-data' : 'application/x-www-form-urlencoded';
 		$this->Template->formId = $arrAttributes[0] ?: 'f'.$this->id;
-		$this->Template->action = $this->getIndexFreeRequest();
+		$this->Template->action = \Environment::get('indexFreeRequest');
 		$this->Template->maxFileSize = $hasUpload ? $this->objModel->getMaxUploadFileSize() : false;
 
 		// Get the target URL
@@ -244,6 +253,16 @@ class Form extends \Hybrid
 	 */
 	protected function processFormData($arrSubmitted, $arrLabels)
 	{
+		// HOOK: prepare form data callback
+		if (isset($GLOBALS['TL_HOOKS']['prepareFormData']) && is_array($GLOBALS['TL_HOOKS']['prepareFormData']))
+		{
+			foreach ($GLOBALS['TL_HOOKS']['prepareFormData'] as $callback)
+			{
+				$this->import($callback[0]);
+				$this->$callback[0]->$callback[1]($arrSubmitted, $arrLabels, $this);
+			}
+		}
+
 		// Send form data via e-mail
 		if ($this->sendViaEmail)
 		{
@@ -439,7 +458,7 @@ class Form extends \Hybrid
 			foreach ($GLOBALS['TL_HOOKS']['processFormData'] as $callback)
 			{
 				$this->import($callback[0]);
-				$this->$callback[0]->$callback[1]($arrData, $this->arrData, $arrFiles, $arrLabels);
+				$this->$callback[0]->$callback[1]($arrData, $this->arrData, $arrFiles, $arrLabels, $this);
 			}
 		}
 

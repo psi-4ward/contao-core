@@ -6,7 +6,7 @@
  * Copyright (C) 2005-2012 Leo Feyer
  * 
  * @package Core
- * @link    http://www.contao.org
+ * @link    http://contao.org
  * @license http://www.gnu.org/licenses/lgpl-3.0.html LGPL
  */
 
@@ -32,6 +32,12 @@ class PageModel extends \Model
 	 * @var string
 	 */
 	protected static $strTable = 'tl_page';
+
+	/**
+	 * Details loaded
+	 * @var boolean
+	 */
+	protected $blnDetailsLoaded = false;
 
 
 	/**
@@ -199,11 +205,11 @@ class PageModel extends \Model
 
 
 	/**
-	 * Find a page matching a list of possible alias names
+	 * Find pages matching a list of possible alias names
 	 * 
 	 * @param array $arrAliases An array of possible alias names
 	 * 
-	 * @return \Model|null The model or null if there is no matching page
+	 * @return \Model_Collection|null A collection of Models or null if there is no matching pages
 	 */
 	public static function findByAliases($arrAliases)
 	{
@@ -226,7 +232,14 @@ class PageModel extends \Model
 		$t = static::$strTable;
 		$arrColumns = array("$t.alias IN('" . implode("','", array_filter($arrAliases)) . "')");
 
-		return static::findOneBy($arrColumns, null, array('order'=>\Database::getInstance()->findInSet("$t.alias", $arrAliases)));
+		// Check the publication status (see #4652)
+		if (!BE_USER_LOGGED_IN)
+		{
+			$time = time();
+			$arrColumns[] = "($t.start='' OR $t.start<$time) AND ($t.stop='' OR $t.stop>$time) AND $t.published=1";
+		}
+
+		return static::findBy($arrColumns, null, array('order'=>\Database::getInstance()->findInSet("$t.alias", $arrAliases)));
 	}
 
 
@@ -235,7 +248,7 @@ class PageModel extends \Model
 	 * 
 	 * @param mixed $varId The numeric ID or the alias name
 	 * 
-	 * @return \Model_Collection|null A collection of models or null if there are no pages
+	 * @return \Model\Collection|null A collection of models or null if there are no pages
 	 */
 	public static function findPublishedByIdOrAlias($varId)
 	{
@@ -260,7 +273,7 @@ class PageModel extends \Model
 	 * @param boolean $blnShowHidden If true, hidden pages will be included
 	 * @param boolean $blnIsSitemap  If true, the sitemap settings apply
 	 * 
-	 * @return \Model_Collection|null A collection of models or null if there are no pages
+	 * @return \Model\Collection|null A collection of models or null if there are no pages
 	 */
 	public static function findPublishedSubpagesWithoutGuestsByPid($intPid, $blnShowHidden=false, $blnIsSitemap=false)
 	{
@@ -274,7 +287,7 @@ class PageModel extends \Model
 			return null;
 		}
 
-		return new \Model_Collection($objSubpages, 'tl_page');
+		return new \Model\Collection($objSubpages, 'tl_page');
 	}
 
 
@@ -283,7 +296,7 @@ class PageModel extends \Model
 	 * 
 	 * @param integer $arrIds An array of page IDs
 	 * 
-	 * @return \Model_Collection|null A collection of models or null if there are no pages
+	 * @return \Model\Collection|null A collection of models or null if there are no pages
 	 */
 	public static function findPublishedRegularWithoutGuestsByIds($arrIds)
 	{
@@ -315,7 +328,7 @@ class PageModel extends \Model
 	 * 
 	 * @param integer $intPid The parent page's ID
 	 * 
-	 * @return \Model_Collection|null A collection of models or null if there are no pages
+	 * @return \Model\Collection|null A collection of models or null if there are no pages
 	 */
 	public static function findPublishedRegularWithoutGuestsByPid($intPid)
 	{
@@ -342,7 +355,7 @@ class PageModel extends \Model
 	 * 
 	 * @param integer $intId The page's ID
 	 * 
-	 * @return \Model_Collection|null A collection of models or null if there are no parent pages
+	 * @return \Model\Collection|null A collection of models or null if there are no parent pages
 	 */
 	public static function findParentsById($intId)
 	{
@@ -354,6 +367,181 @@ class PageModel extends \Model
 			return null;
 		}
 
-		return new \Model_Collection($objPages, 'tl_page');
+		return new \Model\Collection($objPages, 'tl_page');
+	}
+
+
+	/**
+	 * Find a page by its ID and return it with the inherited details
+	 * 
+	 * @param integer $intId The page's ID
+	 * 
+	 * @return \Model|null The model or null if there is no matching page
+	 */
+	public static function findWithDetails($intId)
+	{
+		$objPage = static::findByPk($intId);
+
+		if ($objPage === null)
+		{
+			return null;
+		}
+
+		return $objPage->loadDetails();
+	}
+
+
+	/**
+	 * Get the details of a page including inherited parameters
+	 * 
+	 * @return \Model The page model
+	 */
+	public function loadDetails()
+	{
+		// Loaded already
+		if ($this->blnDetailsLoaded)
+		{
+			return $this;
+		}
+
+		// Set some default values
+		$this->protected = (boolean) $this->protected;
+		$this->groups = $this->protected ? deserialize($this->groups) : false;
+		$this->layout = $this->includeLayout ? $this->layout : false;
+		$this->mobileLayout = $this->includeLayout ? $this->mobileLayout : false;
+		$this->cache = $this->includeCache ? $this->cache : false;
+
+		$pid = $this->pid;
+		$type = $this->type;
+		$alias = $this->alias;
+		$name = $this->title;
+		$title = $this->pageTitle ?: $this->title;
+		$folderUrl = basename($this->alias);
+		$palias = '';
+		$pname = '';
+		$ptitle = '';
+		$trail = array($this->id, $pid);
+
+		// Inherit the settings
+		if ($this->type == 'root')
+		{
+			$objParentPage = $this; // see #4610
+		}
+		else
+		{
+			// Load all parent pages
+			$objParentPage = \PageModel::findParentsById($pid);
+
+			if ($objParentPage !== null)
+			{
+				while ($objParentPage->next() && $pid > 0 && $type != 'root')
+				{
+					$pid = $objParentPage->pid;
+					$type = $objParentPage->type;
+
+					// Parent title
+					if ($ptitle == '')
+					{
+						$palias = $objParentPage->alias;
+						$pname = $objParentPage->title;
+						$ptitle = $objParentPage->pageTitle ?: $objParentPage->title;
+					}
+
+					// Page title
+					if ($type != 'root')
+					{
+						$alias = $objParentPage->alias;
+						$name = $objParentPage->title;
+						$title = $objParentPage->pageTitle ?: $objParentPage->title;
+						$folderUrl = basename($alias) . '/' . $folderUrl;
+						$trail[] = $objParentPage->pid;
+					}
+
+					// Cache
+					if ($objParentPage->includeCache && $this->cache === false)
+					{
+						$this->cache = $objParentPage->cache;
+					}
+
+					// Layout
+					if ($objParentPage->includeLayout)
+					{
+						if ($this->layout === false)
+						{
+							$this->layout = $objParentPage->layout;
+						}
+						if ($this->mobileLayout === false)
+						{
+							$this->mobileLayout = $objParentPage->mobileLayout;
+						}
+					}
+
+					// Protection
+					if ($objParentPage->protected && $this->protected === false)
+					{
+						$this->protected = true;
+						$this->groups = deserialize($objParentPage->groups);
+					}
+				}
+			}
+
+			// Set the titles
+			$this->mainAlias = $alias;
+			$this->mainTitle = $name;
+			$this->mainPageTitle = $title;
+			$this->parentAlias = $palias;
+			$this->parentTitle = $pname;
+			$this->parentPageTitle = $ptitle;
+			$this->folderUrl = $folderUrl;
+		}
+
+		// Set the root ID and title
+		if ($objParentPage !== null && $objParentPage->type == 'root')
+		{
+			$this->rootId = $objParentPage->id;
+			$this->rootTitle = $objParentPage->pageTitle ?: $objParentPage->title;
+			$this->domain = $objParentPage->dns;
+			$this->rootLanguage = $objParentPage->language;
+			$this->language = $objParentPage->language;
+			$this->staticFiles = $objParentPage->staticFiles;
+			$this->staticPlugins = $objParentPage->staticPlugins;
+			$this->dateFormat = $objParentPage->dateFormat;
+			$this->timeFormat = $objParentPage->timeFormat;
+			$this->datimFormat = $objParentPage->datimFormat;
+			$this->adminEmail = $objParentPage->adminEmail;
+
+			// Store whether the root page has been published
+			$time = time();
+			$this->rootIsPublic = ($objParentPage->published && ($objParentPage->start == '' || $objParentPage->start < $time) && ($objParentPage->stop == '' || $objParentPage->stop > $time));
+			$this->rootIsFallback = ($objParentPage->fallback != '');
+		}
+
+		// No root page found
+		elseif (TL_MODE == 'FE' && $this->type != 'root')
+		{
+			header('HTTP/1.1 404 Not Found');
+			\System::log('Page ID "'. $this->id .'" does not belong to a root page', 'PageModel loadDetails()', TL_ERROR);
+			die('No root page found');
+		}
+
+		$this->trail = array_reverse($trail);
+
+		// Remove insert tags from all titles (see #2853)
+		$this->title = strip_insert_tags($this->title);
+		$this->pageTitle = strip_insert_tags($this->pageTitle);
+		$this->parentTitle = strip_insert_tags($this->parentTitle);
+		$this->parentPageTitle = strip_insert_tags($this->parentPageTitle);
+		$this->mainTitle = strip_insert_tags($this->mainTitle);
+		$this->mainPageTitle = strip_insert_tags($this->mainPageTitle);
+		$this->rootTitle = strip_insert_tags($this->rootTitle);
+
+		// Do not cache protected pages
+		if ($this->protected)
+		{
+			$this->cache = 0;
+		}
+
+		$this->blnDetailsLoaded = true;
+		return $this;
 	}
 }

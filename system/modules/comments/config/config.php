@@ -6,7 +6,7 @@
  * Copyright (C) 2005-2012 Leo Feyer
  * 
  * @package Comments
- * @link    http://www.contao.org
+ * @link    http://contao.org
  * @license http://www.gnu.org/licenses/lgpl-3.0.html LGPL
  */
 
@@ -31,7 +31,7 @@ array_insert($GLOBALS['BE_MOD']['content'], 5, array
 	'comments' => array
 	(
 		'tables'     => array('tl_comments'),
-		'icon'       => 'system/modules/comments/html/icon.gif',
-		'stylesheet' => 'system/modules/comments/html/style.css'
+		'icon'       => 'system/modules/comments/assets/icon.gif',
+		'stylesheet' => 'system/modules/comments/assets/style.css'
 	)
 ));

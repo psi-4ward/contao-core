@@ -6,7 +6,7 @@
  * Copyright (C) 2005-2012 Leo Feyer
  * 
  * @package News
- * @link    http://www.contao.org
+ * @link    http://contao.org
  * @license http://www.gnu.org/licenses/lgpl-3.0.html LGPL
  */
 
@@ -459,7 +459,7 @@ $GLOBALS['TL_DCA']['tl_news'] = array
  *
  * Provide miscellaneous methods that are used by the data configuration array.
  * @copyright  Leo Feyer 2005-2012
- * @author     Leo Feyer <http://www.contao.org>
+ * @author     Leo Feyer <http://contao.org>
  * @package    News
  */
 class tl_news extends Backend
@@ -593,122 +593,6 @@ class tl_news extends Backend
 
 
 	/**
-	 * Check permissions to edit table tl_content
-	 */
-	public function checkContentPermission()
-	{
-		if ($this->User->isAdmin)
-		{
-			return;
-		}
-
-		// Set the root IDs
-		if (!is_array($this->User->news) || empty($this->User->news))
-		{
-			$root = array(0);
-		}
-		else
-		{
-			$root = $this->User->news;
-		}
-
-		// Check the current action
-		switch (Input::get('act'))
-		{
-			case 'paste':
-				// Allow
-				break;
-
-			case '': // empty
-			case 'create':
-			case 'select':
-				// Check access to the news item
-				if (!$this->checkAccessToElement(CURRENT_ID, $root, true))
-				{
-					$this->redirect('contao/main.php?act=error');
-				}
-				break;
-
-			case 'editAll':
-			case 'deleteAll':
-			case 'overrideAll':
-			case 'cutAll':
-			case 'copyAll':
-				// Check access to the parent element if a content element is moved
-				if ((Input::get('act') == 'cutAll' || Input::get('act') == 'copyAll') && !$this->checkAccessToElement(Input::get('pid'), $root, (Input::get('mode') == 2)))
-				{
-					$this->redirect('contao/main.php?act=error');
-				}
-
-				$objCes = $this->Database->prepare("SELECT id FROM tl_content WHERE ptable='tl_news' AND pid=?")
-										 ->execute(CURRENT_ID);
-
-				$session = $this->Session->getData();
-				$session['CURRENT']['IDS'] = array_intersect($session['CURRENT']['IDS'], $objCes->fetchEach('id'));
-				$this->Session->setData($session);
-				break;
-
-			case 'cut':
-			case 'copy':
-				// Check access to the parent element if a content element is moved
-				if (!$this->checkAccessToElement(Input::get('pid'), $root, (Input::get('mode') == 2)))
-				{
-					$this->redirect('contao/main.php?act=error');
-				}
-				// NO BREAK STATEMENT HERE
-
-			default:
-				// Check access to the content element
-				if (!$this->checkAccessToElement(Input::get('id'), $root))
-				{
-					$this->redirect('contao/main.php?act=error');
-				}
-				break;
-		}
-	}
-
-
-	/**
-	 * Check access to a particular content element
-	 * @param integer
-	 * @param array
-	 * @param boolean
-	 * @return boolean
-	 */
-	protected function checkAccessToElement($id, $root, $blnIsPid=false)
-	{
-		if ($blnIsPid)
-		{
-			$objArchive = $this->Database->prepare("SELECT a.id, n.id AS nid FROM tl_news n, tl_news_archive a WHERE n.id=? AND n.pid=a.id")
-										 ->limit(1)
-										 ->execute($id);
-		}
-		else
-		{
-			$objArchive = $this->Database->prepare("SELECT a.id, n.id AS nid FROM tl_content c, tl_news n, tl_news_archive a WHERE c.id=? AND c.pid=n.id AND n.pid=a.id")
-										 ->limit(1)
-										 ->execute($id);
-		}
-
-		// Invalid ID
-		if ($objArchive->numRows < 1)
-		{
-			$this->log('Invalid news content element ID ' . $id, 'tl_news checkAccessToElement()', TL_ERROR);
-			return false;
-		}
-
-		// The news archive is not mounted
-		if (!in_array($objArchive->id, $root))
-		{
-			$this->log('Not enough permissions to modify article ID ' . $objArchive->nid . ' in news archive ID ' . $objArchive->id, 'tl_news checkAccessToElement()', TL_ERROR);
-			return false;
-		}
-
-		return true;
-	}
-
-
-	/**
 	 * Auto-generate the news alias if it has not been set yet
 	 * @param mixed
 	 * @param \DataContainer
@@ -723,7 +607,7 @@ class tl_news extends Backend
 		if (!strlen($varValue))
 		{
 			$autoAlias = true;
-			$varValue = standardize($this->restoreBasicEntities($dc->activeRecord->headline));
+			$varValue = standardize(String::restoreBasicEntities($dc->activeRecord->headline));
 		}
 
 		$objAlias = $this->Database->prepare("SELECT id FROM tl_news WHERE alias=?")
@@ -771,7 +655,7 @@ class tl_news extends Backend
 			foreach ($this->User->pagemounts as $id)
 			{
 				$arrPids[] = $id;
-				$arrPids = array_merge($arrPids, $this->getChildRecords($id, 'tl_page'));
+				$arrPids = array_merge($arrPids, $this->Database->getChildRecords($id, 'tl_page'));
 			}
 
 			if (empty($arrPids))
@@ -874,7 +758,7 @@ class tl_news extends Backend
 	 */
 	public function pagePicker(DataContainer $dc)
 	{
-		return ' <a href="contao/page.php?do='.Input::get('do').'&amp;table='.$dc->table.'&amp;field='.$dc->field.'&amp;value='.str_replace(array('{{link_url::', '}}'), '', $dc->value).'" onclick="Backend.getScrollOffset();Backend.openModalSelector({\'width\':765,\'title\':\''.$GLOBALS['TL_LANG']['MOD']['page'][0].'\',\'url\':this.href,\'id\':\''.$dc->field.'\',\'tag\':\'ctrl_'.$dc->field . ((Input::get('act') == 'editAll') ? '_' . $dc->id : '').'\',\'self\':this});return false">' . $this->generateImage('pickpage.gif', $GLOBALS['TL_LANG']['MSC']['pagepicker'], 'style="vertical-align:top;cursor:pointer"') . '</a>';
+		return ' <a href="contao/page.php?do='.Input::get('do').'&amp;table='.$dc->table.'&amp;field='.$dc->field.'&amp;value='.str_replace(array('{{link_url::', '}}'), '', $dc->value).'" onclick="Backend.getScrollOffset();Backend.openModalSelector({\'width\':765,\'title\':\''.specialchars(str_replace("'", "\\'", $GLOBALS['TL_LANG']['MOD']['page'][0])).'\',\'url\':this.href,\'id\':\''.$dc->field.'\',\'tag\':\'ctrl_'.$dc->field . ((Input::get('act') == 'editAll') ? '_' . $dc->id : '').'\',\'self\':this});return false">' . Image::getHtml('pickpage.gif', $GLOBALS['TL_LANG']['MSC']['pagepicker'], 'style="vertical-align:top;cursor:pointer"') . '</a>';
 	}
 
 
@@ -909,7 +793,7 @@ class tl_news extends Backend
 			$icon = 'featured_.gif';
 		}
 
-		return '<a href="'.$this->addToUrl($href).'" title="'.specialchars($title).'"'.$attributes.'>'.$this->generateImage($icon, $label).'</a> ';
+		return '<a href="'.$this->addToUrl($href).'" title="'.specialchars($title).'"'.$attributes.'>'.Image::getHtml($icon, $label).'</a> ';
 	}
 
 
@@ -984,7 +868,7 @@ class tl_news extends Backend
 			$icon = 'invisible.gif';
 		}
 
-		return '<a href="'.$this->addToUrl($href).'" title="'.specialchars($title).'"'.$attributes.'>'.$this->generateImage($icon, $label).'</a> ';
+		return '<a href="'.$this->addToUrl($href).'" title="'.specialchars($title).'"'.$attributes.'>'.Image::getHtml($icon, $label).'</a> ';
 	}
 
 

@@ -6,7 +6,7 @@
  * Copyright (C) 2005-2012 Leo Feyer
  * 
  * @package Faq
- * @link    http://www.contao.org
+ * @link    http://contao.org
  * @license http://www.gnu.org/licenses/lgpl-3.0.html LGPL
  */
 
@@ -21,7 +21,7 @@ namespace Contao;
  * Class ModuleFaqList
  *
  * @copyright  Leo Feyer 2008-2012
- * @author     Leo Feyer <http://www.contao.org>
+ * @author     Leo Feyer <http://contao.org>
  * @package    Faq
  */
 class ModuleFaqList extends \Module
@@ -100,8 +100,8 @@ class ModuleFaqList extends \Module
 			$arrTemp['title'] = specialchars($objFaq->question, true);
 			$arrTemp['href'] = $this->generateFaqLink($objFaq);
 
-			$arrFaq[$objFaq->id]['items'][] = $arrTemp;
-			$arrFaq[$objFaq->id]['headline'] = $objFaq->headline;
+			$arrFaq[$objFaq->pid]['items'][] = $arrTemp;
+			$arrFaq[$objFaq->pid]['headline'] = $objFaq->getRelated('pid')->headline;
 		}
 
 		$arrFaq = array_values(array_filter($arrFaq));

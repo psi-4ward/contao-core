@@ -6,7 +6,7 @@
  * Copyright (C) 2005-2012 Leo Feyer
  * 
  * @package Comments
- * @link    http://www.contao.org
+ * @link    http://contao.org
  * @license http://www.gnu.org/licenses/lgpl-3.0.html LGPL
  */
 
@@ -43,7 +43,7 @@ class CommentsModel extends \Model
 	 * @param integer $intLimit  An optional limit
 	 * @param integer $intOffset An optional offset
 	 * 
-	 * @return \Model_Collection|null A collection of models or null if there are no comments
+	 * @return \Model\Collection|null A collection of models or null if there are no comments
 	 */
 	public static function findPublishedBySourceAndParent($strSource, $intParent, $blnDesc=false, $intLimit=0, $intOffset=0)
 	{

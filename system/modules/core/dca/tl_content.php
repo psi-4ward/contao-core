@@ -6,7 +6,7 @@
  * Copyright (C) 2005-2012 Leo Feyer
  * 
  * @package Core
- * @link    http://www.contao.org
+ * @link    http://contao.org
  * @license http://www.gnu.org/licenses/lgpl-3.0.html LGPL
  */
 
@@ -22,14 +22,9 @@ $GLOBALS['TL_DCA']['tl_content'] = array
 	(
 		'dataContainer'               => 'Table',
 		'enableVersioning'            => true,
-		'dynamicPtable' => array
-		(
-			'article' => array('tl_article', array('tl_article', 'checkContentPermission'))
-		),
-		'onload_callback' => array
-		(
-			array('tl_content', 'checkPermission')
-		),
+		'ptable'                      => '',
+		'dynamicPtable'               => true,
+		'onload_callback'             => array(),
 		'sql' => array
 		(
 			'keys' => array
@@ -401,7 +396,7 @@ $GLOBALS['TL_DCA']['tl_content'] = array
 		'mooType' => array
 		(
 			'label'                   => &$GLOBALS['TL_LANG']['tl_content']['mooType'],
-			'default'                 => 'start',
+			'default'                 => 'mooStart',
 			'exclude'                 => true,
 			'inputType'               => 'radio',
 			'options'                 => array('mooStart', 'mooStop', 'mooSingle'),
@@ -439,7 +434,7 @@ $GLOBALS['TL_DCA']['tl_content'] = array
 			'label'                   => &$GLOBALS['TL_LANG']['tl_content']['highlight'],
 			'exclude'                 => true,
 			'inputType'               => 'select',
-			'options'                 => array('AS3', 'Bash', 'C', 'CSharp', 'CSS', 'Delphi', 'Diff', 'Groovy', 'Java', 'JavaFx', 'JavaScript', 'Perl', 'PHP', 'PowerShell', 'Python', 'Ruby', 'Scala', 'SQL', 'Text', 'VB', 'XHTML', 'XML'),
+			'options'                 => array('ApacheConf', 'AS3', 'Bash', 'C', 'CSharp', 'CSS', 'Delphi', 'Diff', 'Groovy', 'HTML', 'Java', 'JavaFx', 'JavaScript', 'Perl', 'PHP', 'PowerShell', 'Python', 'Ruby', 'Scala', 'SQL', 'Text', 'VB', 'XHTML', 'XML'),
 			'eval'                    => array('includeBlankOption'=>true, 'tl_class'=>'w50'),
 			'load_callback' => array
 			(
@@ -773,11 +768,21 @@ $GLOBALS['TL_DCA']['tl_content'] = array
 
 
 /**
+ * Dynamically add the permission check and parent table
+ */
+if (Input::get('do') == 'article')
+{
+	$GLOBALS['TL_DCA']['tl_content']['config']['ptable'] = 'tl_article';
+	$GLOBALS['TL_DCA']['tl_content']['config']['onload_callback'][] = array('tl_content', 'checkPermission');
+}
+
+
+/**
  * Class tl_content
  *
  * Provide miscellaneous methods that are used by the data configuration array.
  * @copyright  Leo Feyer 2005-2012
- * @author     Leo Feyer <http://www.contao.org>
+ * @author     Leo Feyer <http://contao.org>
  * @package    Core
  */
 class tl_content extends Backend
@@ -794,26 +799,137 @@ class tl_content extends Backend
 
 
 	/**
-	 * Trigger the permission check of the dynamic parent table
-	 * @throws \Exception
+	 * Check permissions to edit table tl_content
 	 */
 	public function checkPermission()
 	{
+		// Prevent deleting referenced elements (see #4898)
+		if (Input::get('act') == 'deleteAll')
+		{
+			$objCes = $this->Database->prepare("SELECT cteAlias FROM tl_content WHERE (ptable='tl_article' OR ptable='') AND type='alias'")
+									 ->execute();
+
+			$session = $this->Session->getData();
+			$session['CURRENT']['IDS'] = array_diff($session['CURRENT']['IDS'], $objCes->fetchEach('cteAlias'));
+			$this->Session->setData($session);
+		}
+
 		if ($this->User->isAdmin)
 		{
 			return;
 		}
 
-		if (!isset($GLOBALS['TL_DCA']['tl_content']['config']['dynamicPtable'][\Input::get('do')]))
+		// Get the pagemounts
+		$pagemounts = array();
+
+		foreach ($this->User->pagemounts as $root)
 		{
-			throw new \Exception('Module "' . \Input::get('do') . '" does not support dynamic parent tables');
+			$pagemounts[] = $root;
+			$pagemounts = array_merge($pagemounts, $this->Database->getChildRecords($root, 'tl_page'));
 		}
 
-		$callback = $GLOBALS['TL_DCA']['tl_content']['config']['dynamicPtable'][\Input::get('do')][1];
-		$this->loadDataContainer($GLOBALS['TL_DCA']['tl_content']['config']['dynamicPtable'][\Input::get('do')][0]);
+		$pagemounts = array_unique($pagemounts);
 
-		$this->import($callback[0]);
-		$this->$callback[0]->$callback[1]();
+		// Check the current action
+		switch (Input::get('act'))
+		{
+			case 'paste':
+				// Allow
+				break;
+
+			case '': // empty
+			case 'create':
+			case 'select':
+				// Check access to the article
+				if (!$this->checkAccessToElement(CURRENT_ID, $pagemounts, true))
+				{
+					$this->redirect('contao/main.php?act=error');
+				}
+				break;
+
+			case 'editAll':
+			case 'deleteAll':
+			case 'overrideAll':
+			case 'cutAll':
+			case 'copyAll':
+				// Check access to the parent element if a content element is moved
+				if ((Input::get('act') == 'cutAll' || Input::get('act') == 'copyAll') && !$this->checkAccessToElement(Input::get('pid'), $pagemounts, (Input::get('mode') == 2)))
+				{
+					$this->redirect('contao/main.php?act=error');
+				}
+
+				$objCes = $this->Database->prepare("SELECT id FROM tl_content WHERE (ptable='tl_article' OR ptable='') AND pid=?")
+										 ->execute(CURRENT_ID);
+
+				$session = $this->Session->getData();
+				$session['CURRENT']['IDS'] = array_intersect($session['CURRENT']['IDS'], $objCes->fetchEach('id'));
+				$this->Session->setData($session);
+				break;
+
+			case 'cut':
+			case 'copy':
+				// Check access to the parent element if a content element is moved
+				if (!$this->checkAccessToElement(Input::get('pid'), $pagemounts, (Input::get('mode') == 2)))
+				{
+					$this->redirect('contao/main.php?act=error');
+				}
+				// NO BREAK STATEMENT HERE
+
+			default:
+				// Check access to the content element
+				if (!$this->checkAccessToElement(Input::get('id'), $pagemounts))
+				{
+					$this->redirect('contao/main.php?act=error');
+				}
+				break;
+		}
+	}
+
+
+	/**
+	 * Check access to a particular content element
+	 * @param integer
+	 * @param array
+	 * @param boolean
+	 * @return boolean
+	 */
+	protected function checkAccessToElement($id, $pagemounts, $blnIsPid=false)
+	{
+		if ($blnIsPid)
+		{
+			$objPage = $this->Database->prepare("SELECT p.id, p.pid, p.includeChmod, p.chmod, p.cuser, p.cgroup, a.id AS aid FROM tl_article a, tl_page p WHERE a.id=? AND a.pid=p.id")
+									  ->limit(1)
+									  ->execute($id);
+		}
+		else
+		{
+			$objPage = $this->Database->prepare("SELECT p.id, p.pid, p.includeChmod, p.chmod, p.cuser, p.cgroup, a.id AS aid FROM tl_content c, tl_article a, tl_page p WHERE c.id=? AND c.pid=a.id AND a.pid=p.id")
+									  ->limit(1)
+									  ->execute($id);
+		}
+
+		// Invalid ID
+		if ($objPage->numRows < 1)
+		{
+			$this->log('Invalid content element ID ' . $id, 'tl_article checkAccessToElement()', TL_ERROR);
+			return false;
+		}
+
+		// The page is not mounted
+		if (!in_array($objPage->id, $pagemounts))
+		{
+			$this->log('Not enough permissions to modify article ID ' . $objPage->aid . ' on page ID ' . $objPage->id, 'tl_article checkAccessToElement()', TL_ERROR);
+			return false;
+		}
+
+		// Not enough permissions to modify the article
+		if (!$this->User->isAllowed(4, $objPage->row()))
+		{
+			$this->log('Not enough permissions to modify article ID ' . $objPage->aid, 'tl_article checkAccessToElement()', TL_ERROR);
+			return false;
+		}
+
+		return true;
 	}
 
 
@@ -892,7 +1008,7 @@ class tl_content extends Backend
 	 */
 	public function editArticleAlias(DataContainer $dc)
 	{
-		return ($dc->value < 1) ? '' : ' <a href="contao/main.php?do=article&amp;table=tl_content&amp;id=' . $dc->value . '&amp;rt=' . REQUEST_TOKEN . '" title="'.sprintf(specialchars($GLOBALS['TL_LANG']['tl_content']['editalias'][1]), $dc->value).'" style="padding-left:3px">' . $this->generateImage('alias.gif', $GLOBALS['TL_LANG']['tl_content']['editalias'][0], 'style="vertical-align:top"') . '</a>';
+		return ($dc->value < 1) ? '' : ' <a href="contao/main.php?do=article&amp;table=tl_content&amp;id=' . $dc->value . '&amp;rt=' . REQUEST_TOKEN . '" title="'.sprintf(specialchars($GLOBALS['TL_LANG']['tl_content']['editalias'][1]), $dc->value).'" style="padding-left:3px">' . Image::getHtml('alias.gif', $GLOBALS['TL_LANG']['tl_content']['editalias'][0], 'style="vertical-align:top"') . '</a>';
 	}
 
 
@@ -911,7 +1027,7 @@ class tl_content extends Backend
 			foreach ($this->User->pagemounts as $id)
 			{
 				$arrPids[] = $id;
-				$arrPids = array_merge($arrPids, $this->getChildRecords($id, 'tl_page'));
+				$arrPids = array_merge($arrPids, $this->Database->getChildRecords($id, 'tl_page'));
 			}
 
 			if (empty($arrPids))
@@ -950,7 +1066,7 @@ class tl_content extends Backend
 	 */
 	public function editAlias(DataContainer $dc)
 	{
-		return ($dc->value < 1) ? '' : ' <a href="'.preg_replace('/id=[0-9]+/', 'id=' . $dc->value, ampersand(Environment::get('request'))).'" title="'.sprintf(specialchars($GLOBALS['TL_LANG']['tl_content']['editalias'][1]), $dc->value).'" style="padding-left:3px">' . $this->generateImage('alias.gif', $GLOBALS['TL_LANG']['tl_content']['editalias'][0], 'style="vertical-align:top"') . '</a>';
+		return ($dc->value < 1) ? '' : ' <a href="'.preg_replace('/id=[0-9]+/', 'id=' . $dc->value, ampersand(Environment::get('request'))).'" title="'.sprintf(specialchars($GLOBALS['TL_LANG']['tl_content']['editalias'][1]), $dc->value).'" style="padding-left:3px">' . Image::getHtml('alias.gif', $GLOBALS['TL_LANG']['tl_content']['editalias'][0], 'style="vertical-align:top"') . '</a>';
 	}
 
 
@@ -968,7 +1084,7 @@ class tl_content extends Backend
 			foreach ($this->User->pagemounts as $id)
 			{
 				$arrPids[] = $id;
-				$arrPids = array_merge($arrPids, $this->getChildRecords($id, 'tl_page'));
+				$arrPids = array_merge($arrPids, $this->Database->getChildRecords($id, 'tl_page'));
 			}
 
 			if (empty($arrPids))
@@ -976,12 +1092,12 @@ class tl_content extends Backend
 				return $arrAlias;
 			}
 
-			$objAlias = $this->Database->prepare("SELECT c.id, c.pid, c.type, (CASE c.type WHEN 'module' THEN m.name WHEN 'form' THEN f.title WHEN 'table' THEN c.summary ELSE c.headline END) AS headline, c.text, a.title FROM tl_content c LEFT JOIN tl_article a ON a.id=c.pid LEFT JOIN tl_module m ON m.id=c.module LEFT JOIN tl_form f on f.id=c.form WHERE a.pid IN(". implode(',', array_map('intval', array_unique($arrPids))) .") AND c.id!=? ORDER BY a.title, c.sorting")
+			$objAlias = $this->Database->prepare("SELECT c.id, c.pid, c.type, (CASE c.type WHEN 'module' THEN m.name WHEN 'form' THEN f.title WHEN 'table' THEN c.summary ELSE c.headline END) AS headline, c.text, a.title FROM tl_content c LEFT JOIN tl_article a ON a.id=c.pid LEFT JOIN tl_module m ON m.id=c.module LEFT JOIN tl_form f on f.id=c.form WHERE a.pid IN(". implode(',', array_map('intval', array_unique($arrPids))) .") AND (c.ptable='tl_article' OR c.ptable='') AND c.id!=? ORDER BY a.title, c.sorting")
 									   ->execute(Input::get('id'));
 		}
 		else
 		{
-			$objAlias = $this->Database->prepare("SELECT c.id, c.pid, c.type, (CASE c.type WHEN 'module' THEN m.name WHEN 'form' THEN f.title WHEN 'table' THEN c.summary ELSE c.headline END) AS headline, c.text, a.title FROM tl_content c LEFT JOIN tl_article a ON a.id=c.pid LEFT JOIN tl_module m ON m.id=c.module LEFT JOIN tl_form f on f.id=c.form WHERE c.id!=? ORDER BY a.title, c.sorting")
+			$objAlias = $this->Database->prepare("SELECT c.id, c.pid, c.type, (CASE c.type WHEN 'module' THEN m.name WHEN 'form' THEN f.title WHEN 'table' THEN c.summary ELSE c.headline END) AS headline, c.text, a.title FROM tl_content c LEFT JOIN tl_article a ON a.id=c.pid LEFT JOIN tl_module m ON m.id=c.module LEFT JOIN tl_form f on f.id=c.form WHERE (c.ptable='tl_article' OR c.ptable='') AND c.id!=? ORDER BY a.title, c.sorting")
 									   ->execute(Input::get('id'));
 		}
 
@@ -1025,7 +1141,7 @@ class tl_content extends Backend
 	 */
 	public function editForm(DataContainer $dc)
 	{
-		return ($dc->value < 1) ? '' : ' <a href="contao/main.php?do=form&amp;table=tl_form_field&amp;id=' . $dc->value . '&amp;rt=' . REQUEST_TOKEN . '" title="'.sprintf(specialchars($GLOBALS['TL_LANG']['tl_content']['editalias'][1]), $dc->value).'" style="padding-left:3px">' . $this->generateImage('alias.gif', $GLOBALS['TL_LANG']['tl_content']['editalias'][0], 'style="vertical-align:top"') . '</a>';
+		return ($dc->value < 1) ? '' : ' <a href="contao/main.php?do=form&amp;table=tl_form_field&amp;id=' . $dc->value . '&amp;rt=' . REQUEST_TOKEN . '" title="'.sprintf(specialchars($GLOBALS['TL_LANG']['tl_content']['editalias'][1]), $dc->value).'" style="padding-left:3px">' . Image::getHtml('alias.gif', $GLOBALS['TL_LANG']['tl_content']['editalias'][0], 'style="vertical-align:top"') . '</a>';
 	}
 
 
@@ -1062,7 +1178,7 @@ class tl_content extends Backend
 	 */
 	public function editModule(DataContainer $dc)
 	{
-		return ($dc->value < 1) ? '' : ' <a href="contao/main.php?do=themes&amp;table=tl_module&amp;act=edit&amp;id=' . $dc->value . '&amp;rt=' . REQUEST_TOKEN . '" title="'.sprintf(specialchars($GLOBALS['TL_LANG']['tl_content']['editalias'][1]), $dc->value).'" style="padding-left:3px">' . $this->generateImage('alias.gif', $GLOBALS['TL_LANG']['tl_content']['editalias'][0], 'style="vertical-align:top"') . '</a>';
+		return ($dc->value < 1) ? '' : ' <a href="contao/main.php?do=themes&amp;table=tl_module&amp;act=edit&amp;id=' . $dc->value . '&amp;rt=' . REQUEST_TOKEN . '" title="'.sprintf(specialchars($GLOBALS['TL_LANG']['tl_content']['editalias'][1]), $dc->value).'" style="padding-left:3px">' . Image::getHtml('alias.gif', $GLOBALS['TL_LANG']['tl_content']['editalias'][0], 'style="vertical-align:top"') . '</a>';
 	}
 
 
@@ -1091,28 +1207,32 @@ class tl_content extends Backend
 	 */
 	public function getGalleryTemplates(DataContainer $dc)
 	{
-		$intPid = $dc->activeRecord->pid;
-
-		// Override multiple
-		if (Input::get('act') == 'overrideAll')
+		// Only look for a theme in the articles module (see #4808)
+		if (Input::get('do') == 'article')
 		{
-			$intPid = Input::get('id');
-		}
+			$intPid = $dc->activeRecord->pid;
 
-		// Get the page ID
-		$objArticle = $this->Database->prepare("SELECT pid FROM tl_article WHERE id=?")
-									 ->limit(1)
-									 ->execute($intPid);
+			// Override multiple
+			if (Input::get('act') == 'overrideAll')
+			{
+				$intPid = Input::get('id');
+			}
 
-		// Inherit the page settings
-		$objPage = $this->getPageDetails($objArticle->pid);
+			// Get the page ID
+			$objArticle = $this->Database->prepare("SELECT pid FROM tl_article WHERE id=?")
+										 ->limit(1)
+										 ->execute($intPid);
 
-		// Get the theme ID
-		$objLayout = LayoutModel::findByPk($objPage->layout);
+			// Load the page
+			$objPage = PageModel::findWithDetails($objArticle->pid);
 
-		if ($objLayout === null)
-		{
-			return array();
+			// Get the theme ID
+			$objLayout = LayoutModel::findByPk($objPage->layout);
+
+			if ($objLayout === null)
+			{
+				return array();
+			}
 		}
 
 		// Return all gallery templates
@@ -1127,28 +1247,32 @@ class tl_content extends Backend
 	 */
 	public function getPlayerTemplates(DataContainer $dc)
 	{
-		$intPid = $dc->activeRecord->pid;
-
-		// Override multiple
-		if (Input::get('act') == 'overrideAll')
+		// Only look for a theme in the articles module (see #4808)
+		if (Input::get('do') == 'article')
 		{
-			$intPid = Input::get('id');
-		}
+			$intPid = $dc->activeRecord->pid;
 
-		// Get the page ID
-		$objArticle = $this->Database->prepare("SELECT pid FROM tl_article WHERE id=?")
-									 ->limit(1)
-									 ->execute($intPid);
+			// Override multiple
+			if (Input::get('act') == 'overrideAll')
+			{
+				$intPid = Input::get('id');
+			}
 
-		// Inherit the page settings
-		$objPage = $this->getPageDetails($objArticle->pid);
+			// Get the page ID
+			$objArticle = $this->Database->prepare("SELECT pid FROM tl_article WHERE id=?")
+										 ->limit(1)
+										 ->execute($intPid);
 
-		// Get the theme ID
-		$objLayout = LayoutModel::findByPk($objPage->layout);
+			// Load the page
+			$objPage = PageModel::findWithDetails($objArticle->pid);
 
-		if ($objLayout === null)
-		{
-			return array();
+			// Get the theme ID
+			$objLayout = LayoutModel::findByPk($objPage->layout);
+
+			if ($objLayout === null)
+			{
+				return array();
+			}
 		}
 
 		// Return all gallery templates
@@ -1163,7 +1287,7 @@ class tl_content extends Backend
 	 */
 	public function editArticle(DataContainer $dc)
 	{
-		return ($dc->value < 1) ? '' : ' <a href="contao/main.php?do=article&amp;table=tl_article&amp;act=edit&amp;id=' . $dc->value . '&amp;rt=' . REQUEST_TOKEN . '" title="'.sprintf(specialchars($GLOBALS['TL_LANG']['tl_content']['editarticle'][1]), $dc->value).'">' . $this->generateImage('alias.gif', $GLOBALS['TL_LANG']['tl_content']['editarticle'][0], 'style="vertical-align:top"') . '</a>';
+		return ($dc->value < 1) ? '' : ' <a href="contao/main.php?do=article&amp;table=tl_article&amp;act=edit&amp;id=' . $dc->value . '&amp;rt=' . REQUEST_TOKEN . '" title="'.sprintf(specialchars($GLOBALS['TL_LANG']['tl_content']['editarticle'][1]), $dc->value).'">' . Image::getHtml('alias.gif', $GLOBALS['TL_LANG']['tl_content']['editarticle'][0], 'style="vertical-align:top"') . '</a>';
 	}
 
 
@@ -1185,16 +1309,18 @@ class tl_content extends Backend
 		}
 
 		// Limit pages to the website root
-		$objPage = $this->Database->prepare("SELECT pid FROM tl_article WHERE id=?")
-								  ->limit(1)
-								  ->execute($intPid);
+		$objArticle = $this->Database->prepare("SELECT pid FROM tl_article WHERE id=?")
+									 ->limit(1)
+									 ->execute($intPid);
 
-		if ($objPage->numRows)
+		if ($objArticle->numRows)
 		{
-			$objPage = $this->getPageDetails($objPage->pid);
-			$arrRoot = $this->getChildRecords($objPage->rootId, 'tl_page');
+			$objPage = PageModel::findWithDetails($objArticle->pid);
+			$arrRoot = $this->Database->getChildRecords($objPage->rootId, 'tl_page');
 			array_unshift($arrRoot, $objPage->rootId);
 		}
+
+		unset($objArticle);
 
 		// Limit pages to the user's pagemounts
 		if ($this->User->isAdmin)
@@ -1211,7 +1337,7 @@ class tl_content extends Backend
 				}
 
 				$arrPids[] = $id;
-				$arrPids = array_merge($arrPids, $this->getChildRecords($id, 'tl_page'));
+				$arrPids = array_merge($arrPids, $this->Database->getChildRecords($id, 'tl_page'));
 			}
 
 			if (empty($arrPids))
@@ -1297,7 +1423,7 @@ class tl_content extends Backend
 	 */
 	public function listImportWizard()
 	{
-		return ' <a href="' . $this->addToUrl('key=list') . '" title="' . specialchars($GLOBALS['TL_LANG']['MSC']['lw_import'][1]) . '" onclick="Backend.getScrollOffset()">' . $this->generateImage('tablewizard.gif', $GLOBALS['TL_LANG']['MSC']['tw_import'][0], 'style="vertical-align:text-bottom"') . '</a>';
+		return ' <a href="' . $this->addToUrl('key=list') . '" title="' . specialchars($GLOBALS['TL_LANG']['MSC']['lw_import'][1]) . '" onclick="Backend.getScrollOffset()">' . Image::getHtml('tablewizard.gif', $GLOBALS['TL_LANG']['MSC']['tw_import'][0], 'style="vertical-align:text-bottom"') . '</a>';
 	}
 
 
@@ -1307,7 +1433,7 @@ class tl_content extends Backend
 	 */
 	public function tableImportWizard()
 	{
-		return ' <a href="' . $this->addToUrl('key=table') . '" title="' . specialchars($GLOBALS['TL_LANG']['MSC']['tw_import'][1]) . '" onclick="Backend.getScrollOffset()">' . $this->generateImage('tablewizard.gif', $GLOBALS['TL_LANG']['MSC']['tw_import'][0], 'style="vertical-align:text-bottom"') . '</a> ' . $this->generateImage('demagnify.gif', '', 'title="' . specialchars($GLOBALS['TL_LANG']['MSC']['tw_shrink']) . '" style="vertical-align:text-bottom;cursor:pointer" onclick="Backend.tableWizardResize(0.9)"') . $this->generateImage('magnify.gif', '', 'title="' . specialchars($GLOBALS['TL_LANG']['MSC']['tw_expand']) . '" style="vertical-align:text-bottom; cursor:pointer" onclick="Backend.tableWizardResize(1.1)"');
+		return ' <a href="' . $this->addToUrl('key=table') . '" title="' . specialchars($GLOBALS['TL_LANG']['MSC']['tw_import'][1]) . '" onclick="Backend.getScrollOffset()">' . Image::getHtml('tablewizard.gif', $GLOBALS['TL_LANG']['MSC']['tw_import'][0], 'style="vertical-align:text-bottom"') . '</a> ' . Image::getHtml('demagnify.gif', '', 'title="' . specialchars($GLOBALS['TL_LANG']['MSC']['tw_shrink']) . '" style="vertical-align:text-bottom;cursor:pointer" onclick="Backend.tableWizardResize(0.9)"') . Image::getHtml('magnify.gif', '', 'title="' . specialchars($GLOBALS['TL_LANG']['MSC']['tw_expand']) . '" style="vertical-align:text-bottom; cursor:pointer" onclick="Backend.tableWizardResize(1.1)"');
 	}
 
 
@@ -1318,7 +1444,7 @@ class tl_content extends Backend
 	 */
 	public function pagePicker(DataContainer $dc)
 	{
-		return ' <a href="contao/page.php?do='.Input::get('do').'&amp;table='.$dc->table.'&amp;field='.$dc->field.'&amp;value='.str_replace(array('{{link_url::', '}}'), '', $dc->value).'" title="'.specialchars($GLOBALS['TL_LANG']['MSC']['pagepicker']).'" onclick="Backend.getScrollOffset();Backend.openModalSelector({\'width\':765,\'title\':\''.$GLOBALS['TL_LANG']['MOD']['page'][0].'\',\'url\':this.href,\'id\':\''.$dc->field.'\',\'tag\':\'ctrl_'.$dc->field . ((Input::get('act') == 'editAll') ? '_' . $dc->id : '').'\',\'self\':this});return false">' . $this->generateImage('pickpage.gif', $GLOBALS['TL_LANG']['MSC']['pagepicker'], 'style="vertical-align:top;cursor:pointer"') . '</a>';
+		return ' <a href="contao/page.php?do='.Input::get('do').'&amp;table='.$dc->table.'&amp;field='.$dc->field.'&amp;value='.str_replace(array('{{link_url::', '}}'), '', $dc->value).'" title="'.specialchars($GLOBALS['TL_LANG']['MSC']['pagepicker']).'" onclick="Backend.getScrollOffset();Backend.openModalSelector({\'width\':765,\'title\':\''.specialchars(str_replace("'", "\\'", $GLOBALS['TL_LANG']['MOD']['page'][0])).'\',\'url\':this.href,\'id\':\''.$dc->field.'\',\'tag\':\'ctrl_'.$dc->field . ((Input::get('act') == 'editAll') ? '_' . $dc->id : '').'\',\'self\':this});return false">' . Image::getHtml('pickpage.gif', $GLOBALS['TL_LANG']['MSC']['pagepicker'], 'style="vertical-align:top;cursor:pointer"') . '</a>';
 	}
 
 
@@ -1334,11 +1460,11 @@ class tl_content extends Backend
 	 */
 	public function deleteElement($row, $href, $label, $title, $icon, $attributes)
 	{
-		$objElement = $this->Database->prepare("SELECT id FROM tl_content WHERE cteAlias=? AND type=?")
+		$objElement = $this->Database->prepare("SELECT id FROM tl_content WHERE cteAlias=? AND type='alias'")
 									 ->limit(1)
-									 ->execute($row['id'], 'alias');
+									 ->execute($row['id']);
 
-		return $objElement->numRows ? $this->generateImage(preg_replace('/\.gif$/i', '_.gif', $icon)) . ' ' : '<a href="'.$this->addToUrl($href.'&amp;id='.$row['id']).'" title="'.specialchars($title).'"'.$attributes.'>'.$this->generateImage($icon, $label).'</a> ';
+		return $objElement->numRows ? Image::getHtml(preg_replace('/\.gif$/i', '_.gif', $icon)) . ' ' : '<a href="'.$this->addToUrl($href.'&amp;id='.$row['id']).'" title="'.specialchars($title).'"'.$attributes.'>'.Image::getHtml($icon, $label).'</a> ';
 	}
 
 
@@ -1373,7 +1499,7 @@ class tl_content extends Backend
 			$icon = 'invisible.gif';
 		}
 
-		return '<a href="'.$this->addToUrl($href).'" title="'.specialchars($title).'"'.$attributes.'>'.$this->generateImage($icon, $label).'</a> ';
+		return '<a href="'.$this->addToUrl($href).'" title="'.specialchars($title).'"'.$attributes.'>'.Image::getHtml($icon, $label).'</a> ';
 	}
 
 
@@ -1387,7 +1513,19 @@ class tl_content extends Backend
 		// Check permissions to edit
 		Input::setGet('id', $intId);
 		Input::setGet('act', 'toggle');
-		$this->checkPermission();
+
+		// The onload_callbacks vary depending on the dynamic parent table (see #4894)
+		if (is_array($GLOBALS['TL_DCA']['tl_content']['config']['onload_callback']))
+		{
+			foreach ($GLOBALS['TL_DCA']['tl_content']['config']['onload_callback'] as $callback)
+			{
+				if (is_array($callback))
+				{
+					$this->import($callback[0]);
+					$this->$callback[0]->$callback[1]($this);
+				}
+			}
+		}
 
 		// Check permissions to publish
 		if (!$this->User->isAdmin && !$this->User->hasAccess('tl_content::invisible', 'alexf'))

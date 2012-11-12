@@ -6,7 +6,7 @@
  * Copyright (C) 2005-2012 Leo Feyer
  * 
  * @package Core
- * @link    http://www.contao.org
+ * @link    http://contao.org
  * @license http://www.gnu.org/licenses/lgpl-3.0.html LGPL
  */
 
@@ -90,7 +90,7 @@ class MemberGroupModel extends \Model
 	/**
 	 * Find all active groups
 	 * 
-	 * @return \Model_Collection|null A collection of models or null if there are no member groups
+	 * @return \Model\Collection|null A collection of models or null if there are no member groups
 	 */
 	public static function findAllActive()
 	{

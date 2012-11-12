@@ -6,7 +6,7 @@
  * Copyright (C) 2005-2012 Leo Feyer
  * 
  * @package News
- * @link    http://www.contao.org
+ * @link    http://contao.org
  * @license http://www.gnu.org/licenses/lgpl-3.0.html LGPL
  */
 
@@ -22,7 +22,7 @@ namespace Contao;
  *
  * Provide methods regarding news archives.
  * @copyright  Leo Feyer 2005-2012
- * @author     Leo Feyer <http://www.contao.org>
+ * @author     Leo Feyer <http://contao.org>
  * @package    News
  */
 class News extends \Frontend
@@ -65,7 +65,9 @@ class News extends \Frontend
 	 */
 	public function generateFeeds()
 	{
-		$this->removeOldFeeds();
+		$this->import('Automator');
+		$this->Automator->purgeXmlFiles();
+
 		$objFeed = \NewsFeedModel::findAll();
 
 		if ($objFeed !== null)
@@ -123,10 +125,16 @@ class News extends \Frontend
 			{
 				$jumpTo = $objArticle->getRelated('pid')->jumpTo;
 
+				// No jumpTo page set (see #4784)
+				if (!$jumpTo)
+				{
+					continue;
+				}
+
 				// Get the jumpTo URL
 				if (!isset($arrUrls[$jumpTo]))
 				{
-					$objParent = $this->getPageDetails($jumpTo);
+					$objParent = \PageModel::findWithDetails($jumpTo);
 					$arrUrls[$jumpTo] = $this->generateFrontendUrl($objParent->row(), ($GLOBALS['TL_CONFIG']['useAutoItem'] ?  '/%s' : '/items/%s'), $objParent->language);
 				}
 
@@ -134,7 +142,7 @@ class News extends \Frontend
 				$objItem = new \FeedItem();
 
 				$objItem->title = $objArticle->headline;
-				$objItem->link = (($objArticle->source == 'external') ? '' : $strLink) . $this->getLink($objArticle, $strUrl);
+				$objItem->link = $this->getLink($objArticle, $strUrl, $strLink);
 				$objItem->published = $objArticle->date;
 				$objItem->author = $objArticle->authorName;
 
@@ -163,22 +171,26 @@ class News extends \Frontend
 				// Add the article image as enclosure
 				if ($objArticle->addImage)
 				{
-					$objItem->addEnclosure($objArticle->singleSRC);
+					$objFile = \FilesModel::findByPk($objArticle->singleSRC);
+
+					if ($objFile !== null)
+					{
+						$objItem->addEnclosure($objFile->path);
+					}
 				}
 
-				// Enclosure
+				// Enclosures
 				if ($objArticle->addEnclosure)
 				{
 					$arrEnclosure = deserialize($objArticle->enclosure, true);
 
 					if (is_array($arrEnclosure))
 					{
-						foreach ($arrEnclosure as $strEnclosure)
+						$objFile = \FilesModel::findMultipleByIds($arrEnclosure);
+
+						while ($objFile->next())
 						{
-							if (is_file(TL_ROOT . '/' . $strEnclosure))
-							{
-								$objItem->addEnclosure($strEnclosure);
-							}
+							$objItem->addEnclosure($objFile->path);
 						}
 					}
 				}
@@ -207,7 +219,7 @@ class News extends \Frontend
 
 		if ($intRoot > 0)
 		{
-			$arrRoot = $this->getChildRecords($intRoot, 'tl_page');
+			$arrRoot = $this->Database->getChildRecords($intRoot, 'tl_page');
 		}
 
 		$arrProcessed = array();
@@ -236,7 +248,13 @@ class News extends \Frontend
 				if (!isset($arrProcessed[$objArchive->jumpTo]))
 				{
 					$domain = \Environment::get('base');
-					$objParent = $this->getPageDetails($objArchive->jumpTo);
+					$objParent = \PageModel::findWithDetails($objArchive->jumpTo);
+
+					// The target page does not exist
+					if ($objParent === null)
+					{
+						continue;
+					}
 
 					if ($objParent->domain != '')
 					{
@@ -269,9 +287,10 @@ class News extends \Frontend
 	 * Return the link of a news article
 	 * @param object
 	 * @param string
+	 * @param string
 	 * @return string
 	 */
-	protected function getLink($objItem, $strUrl)
+	protected function getLink($objItem, $strUrl, $strBase='')
 	{
 		switch ($objItem->source)
 		{
@@ -284,7 +303,7 @@ class News extends \Frontend
 			case 'internal':
 				if (($objTarget = $objItem->getRelated('jumpTo')) !== null)
 				{
-					return $this->generateFrontendUrl($objTarget->row());
+					return $strBase . $this->generateFrontendUrl($objTarget->row());
 				}
 				break;
 
@@ -292,13 +311,13 @@ class News extends \Frontend
 			case 'article':
 				if (($objArticle = \ArticleModel::findByPk($objItem->articleId, array('eager'=>true))) !== null)
 				{
-					return ampersand($this->generateFrontendUrl($objArticle->pid, '/articles/' . ((!$GLOBALS['TL_CONFIG']['disableAlias'] && $objArticle->alias != '') ? $objArticle->alias : $objArticle->id)));
+					return $strBase . ampersand($this->generateFrontendUrl($objArticle->getRelated('pid')->row(), '/articles/' . ((!$GLOBALS['TL_CONFIG']['disableAlias'] && $objArticle->alias != '') ? $objArticle->alias : $objArticle->id)));
 				}
 				break;
 		}
 
 		// Link to the default page
-		return sprintf($strUrl, (($objItem->alias != '' && !$GLOBALS['TL_CONFIG']['disableAlias']) ? $objItem->alias : $objItem->id));
+		return sprintf($strBase . $strUrl, (($objItem->alias != '' && !$GLOBALS['TL_CONFIG']['disableAlias']) ? $objItem->alias : $objItem->id));
 	}
 
 

@@ -6,7 +6,7 @@
  * Copyright (C) 2005-2012 Leo Feyer
  * 
  * @package Core
- * @link    http://www.contao.org
+ * @link    http://contao.org
  * @license http://www.gnu.org/licenses/lgpl-3.0.html LGPL
  */
 
@@ -22,7 +22,7 @@ namespace Contao;
  *
  * Provide methods to handle file meta information.
  * @copyright  Leo Feyer 2005-2012
- * @author     Leo Feyer <http://www.contao.org>
+ * @author     Leo Feyer <http://contao.org>
  * @package    Core
  */
 class MetaWizard extends \Widget
@@ -95,9 +95,9 @@ class MetaWizard extends \Widget
 			foreach ($this->varValue as $lang=>$meta)
 			{
 				$return .= '
-    <li class="'.(($count%2 == 0) ? 'even' : 'odd').'">';
+    <li class="'.(($count%2 == 0) ? 'even' : 'odd').'" data-language="' . $lang . '">';
 
-				$return .= '<span class="lang">' . $languages[$lang] . ' ' . $this->generateImage('delete.gif', '', 'class="tl_metawizard_img" onclick="this.getParent(\'li\').destroy();$$(\'div.tip-wrap\').destroy()" title="'.specialchars($GLOBALS['TL_LANG']['MSC']['aw_delete']).'"') . '</span>';
+				$return .= '<span class="lang">' . $languages[$lang] . ' ' . \Image::getHtml('delete.gif', '', 'class="tl_metawizard_img" onclick="Backend.metaDelete(this)" title="'.specialchars($GLOBALS['TL_LANG']['MSC']['aw_delete']).'"') . '</span>';
 				$return .= '<label for="ctrl_title_'.$count.'">'.$GLOBALS['TL_LANG']['MSC']['aw_title'].'</label> <input type="text" name="'.$this->strId.'['.$lang.'][title]" id="ctrl_title_'.$count.'" class="tl_text" value="'.specialchars($meta['title']).'"><br>';
 				$return .= '<label for="ctrl_link_'.$count.'">'.$GLOBALS['TL_LANG']['MSC']['aw_link'].'</label> <input type="text" name="'.$this->strId.'['.$lang.'][link]" id="ctrl_link_'.$count.'" class="tl_text" value="'.specialchars($meta['link']).'"><br>';
 				$return .= '<label for="ctrl_caption_'.$count.'">'.$GLOBALS['TL_LANG']['MSC']['aw_caption'].'</label> <input type="text" name="'.$this->strId.'['.$lang.'][caption]" id="ctrl_caption_'.$count.'" class="tl_text" value="'.specialchars($meta['caption']).'">';
@@ -118,12 +118,7 @@ class MetaWizard extends \Widget
 		// Add the remaining languages
 		foreach ($languages as $k=>$v)
 		{
-			if (in_array($k, $taken))
-			{
-				continue;
-			}
-
-			$options[] = '<option value="'.$k.'">'.$v.'</option>';
+			$options[] = '<option value="' . $k . '"' . (in_array($k, $taken) ? ' disabled' : '') . '>' . $v . '</option>';
 		}
 
 		$return .= '

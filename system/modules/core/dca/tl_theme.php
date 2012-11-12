@@ -6,7 +6,7 @@
  * Copyright (C) 2005-2012 Leo Feyer
  * 
  * @package Core
- * @link    http://www.contao.org
+ * @link    http://contao.org
  * @license http://www.gnu.org/licenses/lgpl-3.0.html LGPL
  */
 
@@ -29,6 +29,18 @@ $GLOBALS['TL_DCA']['tl_theme'] = array
 			(
 				'id' => 'primary'
 			)
+		),
+		'onload_callback' => array
+		(
+			array('tl_theme', 'updateStyleSheet')
+		),
+		'oncopy_callback' => array
+		(
+			array('tl_theme', 'scheduleUpdate')
+		),
+		'onsubmit_callback' => array
+		(
+			array('tl_theme', 'scheduleUpdate')
 		)
 	),
 
@@ -120,7 +132,7 @@ $GLOBALS['TL_DCA']['tl_theme'] = array
 	// Palettes
 	'palettes' => array
 	(
-		'default'                     => '{title_legend},name,author;{config_legend},folders,templates,screenshot;{vars_legend},vars'
+		'default'                     => '{title_legend},name,author;{config_legend},folders,screenshot,templates;{vars_legend},vars'
 	),
 
 	// Fields
@@ -164,20 +176,21 @@ $GLOBALS['TL_DCA']['tl_theme'] = array
 			'eval'                    => array('multiple'=>true, 'fieldType'=>'checkbox'),
 			'sql'                     => "blob NULL"
 		),
-		'templates' => array
-		(
-			'label'                   => &$GLOBALS['TL_LANG']['tl_theme']['templates'],
-			'exclude'                 => true,
-			'inputType'               => 'fileTree',
-			'eval'                    => array('fieldType'=>'radio', 'path'=>'templates'),
-			'sql'                     => "varchar(255) NOT NULL default ''"
-		),
 		'screenshot' => array
 		(
 			'label'                   => &$GLOBALS['TL_LANG']['tl_theme']['screenshot'],
 			'exclude'                 => true,
 			'inputType'               => 'fileTree',
 			'eval'                    => array('fieldType'=>'radio', 'filesOnly'=>true),
+			'sql'                     => "varchar(255) NOT NULL default ''"
+		),
+		'templates' => array
+		(
+			'label'                   => &$GLOBALS['TL_LANG']['tl_theme']['templates'],
+			'exclude'                 => true,
+			'inputType'               => 'select',
+			'options_callback'        => array('tl_theme', 'getTemplateFolders'),
+			'eval'                    => array('includeBlankOption'=>true),
 			'sql'                     => "varchar(255) NOT NULL default ''"
 		),
 		'vars' => array
@@ -196,7 +209,7 @@ $GLOBALS['TL_DCA']['tl_theme'] = array
  *
  * Provide miscellaneous methods that are used by the data configuration array.
  * @copyright  Leo Feyer 2005-2012
- * @author     Leo Feyer <http://www.contao.org>
+ * @author     Leo Feyer <http://contao.org>
  * @package    Core
  */
 class tl_theme extends Backend
@@ -226,11 +239,71 @@ class tl_theme extends Backend
 
 			if ($objFile !== null)
 			{
-				$label = '<img src="' . TL_FILES_URL . Image::get($objFile->path, 160, 120) . '" width="160" height="120" alt="" class="theme_preview">' . $label;
+				$label = '<img src="' . TL_FILES_URL . Image::get($objFile->path, 160, 120, 'center_top') . '" width="160" height="120" alt="" class="theme_preview">' . $label;
 			}
 		}
 
 		return $label;
+	}
+
+
+	/**
+	 * Check for modified style sheets and update them if necessary
+	 */
+	public function updateStyleSheet()
+	{
+		if ($this->Session->get('style_sheet_update_all'))
+		{
+			$this->import('StyleSheets');
+			$this->StyleSheets->updateStyleSheets();
+		}
+
+		$this->Session->set('style_sheet_update_all', null);
+	}
+
+
+	/**
+	 * Schedule a style sheet update
+	 * 
+	 * This method is triggered when a single theme or multiple themes are
+	 * modified (edit/editAll) or duplicated (copy/copyAll).
+	 */
+	public function scheduleUpdate()
+	{
+		$this->Session->set('style_sheet_update_all', true);
+	}
+
+
+	/**
+	 * Return all template folders as array
+	 * @return array
+	 */
+	public function getTemplateFolders()
+	{
+		return $this->doGetTemplateFolders('templates');
+	}
+
+
+	/**
+	 * Return all template folders as array
+	 * @param string
+	 * @param integer
+	 * @return array
+	 */
+	protected function doGetTemplateFolders($path, $level=0)
+	{
+		$return = array();
+
+		foreach (scan(TL_ROOT . '/' . $path) as $file)
+		{
+			if (is_dir(TL_ROOT . '/' . $path . '/' . $file))
+			{
+				$return[$path . '/' . $file] = str_repeat(' &nbsp; &nbsp; ', $level) . $file;
+				$return = array_merge($return, $this->doGetTemplateFolders($path . '/' . $file, $level+1));
+			}
+		}
+
+		return $return;
 	}
 
 
@@ -246,7 +319,7 @@ class tl_theme extends Backend
 	 */
 	public function editCss($row, $href, $label, $title, $icon, $attributes)
 	{
-		return ($this->User->isAdmin || $this->User->hasAccess('css', 'themes')) ? '<a href="'.$this->addToUrl($href.'&amp;id='.$row['id']).'" title="'.specialchars($title).'"'.$attributes.'>'.$this->generateImage($icon, $label).'</a> ' : $this->generateImage(preg_replace('/\.gif$/i', '_.gif', $icon)).' ';
+		return ($this->User->isAdmin || $this->User->hasAccess('css', 'themes')) ? '<a href="'.$this->addToUrl($href.'&amp;id='.$row['id']).'" title="'.specialchars($title).'"'.$attributes.'>'.Image::getHtml($icon, $label).'</a> ' : Image::getHtml(preg_replace('/\.gif$/i', '_.gif', $icon)).' ';
 	}
 
 
@@ -262,7 +335,7 @@ class tl_theme extends Backend
 	 */
 	public function editModules($row, $href, $label, $title, $icon, $attributes)
 	{
-		return ($this->User->isAdmin || $this->User->hasAccess('modules', 'themes')) ? '<a href="'.$this->addToUrl($href.'&amp;id='.$row['id']).'" title="'.specialchars($title).'"'.$attributes.'>'.$this->generateImage($icon, $label).'</a> ' : $this->generateImage(preg_replace('/\.gif$/i', '_.gif', $icon)).' ';
+		return ($this->User->isAdmin || $this->User->hasAccess('modules', 'themes')) ? '<a href="'.$this->addToUrl($href.'&amp;id='.$row['id']).'" title="'.specialchars($title).'"'.$attributes.'>'.Image::getHtml($icon, $label).'</a> ' : Image::getHtml(preg_replace('/\.gif$/i', '_.gif', $icon)).' ';
 	}
 
 
@@ -278,6 +351,6 @@ class tl_theme extends Backend
 	 */
 	public function editLayout($row, $href, $label, $title, $icon, $attributes)
 	{
-		return ($this->User->isAdmin || $this->User->hasAccess('layout', 'themes')) ? '<a href="'.$this->addToUrl($href.'&amp;id='.$row['id']).'" title="'.specialchars($title).'"'.$attributes.'>'.$this->generateImage($icon, $label).'</a> ' : $this->generateImage(preg_replace('/\.gif$/i', '_.gif', $icon)).' ';
+		return ($this->User->isAdmin || $this->User->hasAccess('layout', 'themes')) ? '<a href="'.$this->addToUrl($href.'&amp;id='.$row['id']).'" title="'.specialchars($title).'"'.$attributes.'>'.Image::getHtml($icon, $label).'</a> ' : Image::getHtml(preg_replace('/\.gif$/i', '_.gif', $icon)).' ';
 	}
 }

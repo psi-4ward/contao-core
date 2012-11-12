@@ -6,7 +6,7 @@
  * Copyright (C) 2005-2012 Leo Feyer
  * 
  * @package Core
- * @link    http://www.contao.org
+ * @link    http://contao.org
  * @license http://www.gnu.org/licenses/lgpl-3.0.html LGPL
  */
 
@@ -22,7 +22,7 @@ namespace Contao;
  *
  * Front end content element "table".
  * @copyright  Leo Feyer 2005-2012
- * @author     Leo Feyer <http://www.contao.org>
+ * @author     Leo Feyer <http://contao.org>
  * @package    Core
  */
 class ContentTable extends \ContentElement
@@ -61,15 +61,15 @@ class ContentTable extends \ContentElement
 			{
 				$this->Template->sortable = true;
 				$this->Template->hasMooTools = true;
-				$GLOBALS['TL_CSS'][] = 'plugins/mootools/tablesort/css/tablesort.css';
-				$GLOBALS['TL_MOOTOOLS'][] = '<script' . (($objPage->outputFormat == 'xhtml') ? ' type="text/javascript"' : '') . ' src="' . TL_PLUGINS_URL . 'plugins/mootools/tablesort/js/tablesort.js"></script>';
+				$GLOBALS['TL_CSS'][] = 'assets/mootools/tablesort/css/tablesort.css';
+				$GLOBALS['TL_MOOTOOLS'][] = '<script' . (($objPage->outputFormat == 'xhtml') ? ' type="text/javascript"' : '') . ' src="' . TL_ASSETS_URL . 'assets/mootools/tablesort/js/tablesort.js"></script>';
 			}
 			elseif ($objPage->hasJQuery)
 			{
 				$this->Template->sortable = true;
 				$this->Template->hasJQuery = true;
-				$GLOBALS['TL_CSS'][] = 'plugins/jquery/tablesorter/' . TABLESORTER . '/css/tablesorter.css';
-				$GLOBALS['TL_JQUERY'][] = '<script' . (($objPage->outputFormat == 'xhtml') ? ' type="text/javascript"' : '') . ' src="' . TL_PLUGINS_URL . 'plugins/jquery/tablesorter/' . TABLESORTER . '/js/tablesorter.js"></script>';
+				$GLOBALS['TL_CSS'][] = 'assets/jquery/tablesorter/' . TABLESORTER . '/css/tablesorter.css';
+				$GLOBALS['TL_JQUERY'][] = '<script' . (($objPage->outputFormat == 'xhtml') ? ' type="text/javascript"' : '') . ' src="' . TL_ASSETS_URL . 'assets/jquery/tablesorter/' . TABLESORTER . '/js/tablesorter.js"></script>';
 			}
 		}
 

@@ -6,7 +6,7 @@
  * Copyright (C) 2005-2012 Leo Feyer
  * 
  * @package Calendar
- * @link    http://www.contao.org
+ * @link    http://contao.org
  * @license http://www.gnu.org/licenses/lgpl-3.0.html LGPL
  */
 
@@ -22,7 +22,7 @@ namespace Contao;
  *
  * Provide methods regarding calendars.
  * @copyright  Leo Feyer 2005-2012
- * @author     Leo Feyer <http://www.contao.org>
+ * @author     Leo Feyer <http://contao.org>
  * @package    Calendar
  */
 class Calendar extends \Frontend
@@ -72,7 +72,9 @@ class Calendar extends \Frontend
 	 */
 	public function generateFeeds()
 	{
-		$this->removeOldFeeds();
+		$this->import('Automator');
+		$this->Automator->purgeXmlFiles();
+
 		$objCalendar = \CalendarFeedModel::findAll();
 
 		if ($objCalendar !== null)
@@ -125,10 +127,16 @@ class Calendar extends \Frontend
 			{
 				$jumpTo = $objArticle->getRelated('pid')->jumpTo;
 
+				// No jumpTo page set (see #4784)
+				if (!$jumpTo)
+				{
+					continue;
+				}
+
 				// Get the jumpTo URL
 				if (!isset($arrUrls[$jumpTo]))
 				{
-					$objParent = $this->getPageDetails($jumpTo);
+					$objParent = \PageModel::findWithDetails($jumpTo);
 					$arrUrls[$jumpTo] = $this->generateFrontendUrl($objParent->row(), ($GLOBALS['TL_CONFIG']['useAutoItem'] ?  '/%s' : '/events/%s'), $objParent->language);
 				}
 
@@ -169,7 +177,7 @@ class Calendar extends \Frontend
 		$count = 0;
 		ksort($this->arrEvents);
 
-		// Add feed items
+		// Add the feed items
 		foreach ($this->arrEvents as $days)
 		{
 			foreach ($days as $events)
@@ -191,7 +199,24 @@ class Calendar extends \Frontend
 					$objItem->author = $event['authorName'];
 
 					// Prepare the description
-					$strDescription = ($arrFeed['source'] == 'source_text') ? $event['description'] : $event['teaser'];
+					if ($arrFeed['source'] == 'source_text')
+					{
+						$strDescription = '';
+						$objElement = \ContentModel::findPublishedByPidAndTable($event['id'], 'tl_calendar_events');
+
+						if ($objElement !== null)
+						{
+							while ($objElement->next())
+							{
+								$strDescription .= $this->getContentElement($objElement->id);
+							}
+						}
+					}
+					else
+					{
+						$strDescription = $event['teaser'];
+					}
+
 					$strDescription = $this->replaceInsertTags($strDescription);
 					$objItem->description = $this->convertRelativeUrls($strDescription, $strLink);
 
@@ -227,7 +252,7 @@ class Calendar extends \Frontend
 
 		if ($intRoot > 0)
 		{
-			$arrRoot = $this->getChildRecords($intRoot, 'tl_page');
+			$arrRoot = $this->Database->getChildRecords($intRoot, 'tl_page');
 		}
 
 		$arrProcessed = array();
@@ -256,7 +281,13 @@ class Calendar extends \Frontend
 				if (!isset($arrProcessed[$objCalendar->jumpTo]))
 				{
 					$domain = \Environment::get('base');
-					$objParent = $this->getPageDetails($objCalendar->jumpTo);
+					$objParent = \PageModel::findWithDetails($objCalendar->jumpTo);
+
+					// The target page does not exist
+					if ($objParent === null)
+					{
+						continue;
+					}
 
 					if ($objParent->domain != '')
 					{
@@ -293,7 +324,7 @@ class Calendar extends \Frontend
 	 * @param string
 	 * @param string
 	 */
-	protected function addEvent($objEvent, $intStart, $intEnd, $strUrl, $strLink)
+	protected function addEvent($objEvent, $intStart, $intEnd, $strUrl, $strBase)
 	{
 		if ($intEnd < time()) // see #3917
 		{
@@ -338,22 +369,22 @@ class Calendar extends \Frontend
 			case 'internal':
 				if (($objTarget = $objEvent->getRelated('jumpTo')) !== null)
 				{
-					$link = $strLink . $this->generateFrontendUrl($objTarget->row());
+					$link = $strBase . $this->generateFrontendUrl($objTarget->row());
 				}
 				break;
 
 			case 'article':
 				if (($objArticle = \ArticleModel::findByPk($objEvent->articleId, array('eager'=>true))) !== null)
 				{
-					$link = ampersand($this->generateFrontendUrl($objArticle->pid, '/articles/' . ((!$GLOBALS['TL_CONFIG']['disableAlias'] && $objArticle->alias != '') ? $objArticle->alias : $objArticle->id)));
+					$link = $strBase . ampersand($this->generateFrontendUrl($objArticle->getRelated('pid')->row(), '/articles/' . ((!$GLOBALS['TL_CONFIG']['disableAlias'] && $objArticle->alias != '') ? $objArticle->alias : $objArticle->id)));
 				}
 				break;
 		}
 
-		// Link to default page
+		// Link to the default page
 		if ($link == '')
 		{
-			$link = sprintf($strUrl, (($objEvent->alias != '' && !$GLOBALS['TL_CONFIG']['disableAlias']) ? $objEvent->alias : $objEvent->id));
+			$link = sprintf($strBase . $strUrl, (($objEvent->alias != '' && !$GLOBALS['TL_CONFIG']['disableAlias']) ? $objEvent->alias : $objEvent->id));
 		}
 
 		// Clean the RTE output
@@ -376,19 +407,29 @@ class Calendar extends \Frontend
 			'authorName' => $objEvent->authorName
 		);
 
-		// Enclosure
+		// Add the article image as enclosure
+		if ($objEvent->addImage)
+		{
+			$objFile = \FilesModel::findByPk($objEvent->singleSRC);
+
+			if ($objFile !== null)
+			{
+				$arrEvent['enclosure'][] = $objFile->path;
+			}
+		}
+
+		// Enclosures
 		if ($objEvent->addEnclosure)
 		{
 			$arrEnclosure = deserialize($objEvent->enclosure, true);
 
 			if (is_array($arrEnclosure))
 			{
-				foreach ($arrEnclosure as $strEnclosure)
+				$objFile = \FilesModel::findMultipleByIds($arrEnclosure);
+
+				while ($objFile->next())
 				{
-					if (is_file(TL_ROOT . '/' . $strEnclosure))
-					{
-						$arrEvent['enclosure'][] = $strEnclosure;
-					}
+					$arrEvent['enclosure'][] = $objFile->path;
 				}
 			}
 		}

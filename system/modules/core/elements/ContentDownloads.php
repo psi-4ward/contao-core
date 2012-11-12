@@ -6,7 +6,7 @@
  * Copyright (C) 2005-2012 Leo Feyer
  * 
  * @package Core
- * @link    http://www.contao.org
+ * @link    http://contao.org
  * @license http://www.gnu.org/licenses/lgpl-3.0.html LGPL
  */
 
@@ -22,7 +22,7 @@ namespace Contao;
  *
  * Front end content element "downloads".
  * @copyright  Leo Feyer 2005-2012
- * @author     Leo Feyer <http://www.contao.org>
+ * @author     Leo Feyer <http://contao.org>
  * @package    Core
  */
 class ContentDownloads extends \ContentElement
@@ -84,7 +84,7 @@ class ContentDownloads extends \ContentElement
 
 		$file = \Input::get('file', true);
 
-		// Send the file to the browser
+		// Send the file to the browser and do not send a 404 header (see #4632)
 		if ($file != '' && !preg_match('/^meta(_[a-z]{2})?\.txt$/', basename($file)))
 		{
 			while ($this->objFiles->next())
@@ -94,15 +94,6 @@ class ContentDownloads extends \ContentElement
 					$this->sendFileToBrowser($file);
 				}
 			}
-
-			// Do not index or cache the page
-			global $objPage;
-			$objPage->noSearch = 1;
-			$objPage->cache = 0;
-
-			// Send a 404 header
-			header('HTTP/1.1 404 Not Found');
-			return '<p class="error">' . sprintf($GLOBALS['TL_LANG']['ERR']['download'], $file) . '</p>';
 		}
 
 		return parent::generate();
@@ -160,7 +151,7 @@ class ContentDownloads extends \ContentElement
 					'caption'   => $arrMeta['caption'],
 					'href'      => \Environment::get('request') . (($GLOBALS['TL_CONFIG']['disableAlias'] || strpos(\Environment::get('request'), '?') !== false) ? '&amp;' : '?') . 'file=' . $this->urlEncode($objFiles->path),
 					'filesize'  => $this->getReadableSize($objFile->filesize, 1),
-					'icon'      => TL_FILES_URL . 'system/themes/' . $this->getTheme() . '/images/' . $objFile->icon,
+					'icon'      => TL_ASSETS_URL . 'assets/contao/images/' . $objFile->icon,
 					'mime'      => $objFile->mime,
 					'meta'      => $arrMeta,
 					'extension' => $objFile->extension,
@@ -214,7 +205,7 @@ class ContentDownloads extends \ContentElement
 						'caption'   => $arrMeta['caption'],
 						'href'      => \Environment::get('request') . (($GLOBALS['TL_CONFIG']['disableAlias'] || strpos(\Environment::get('request'), '?') !== false) ? '&amp;' : '?') . 'file=' . $this->urlEncode($objSubfiles->path),
 						'filesize'  => $this->getReadableSize($objFile->filesize, 1),
-						'icon'      => 'system/themes/' . $this->getTheme() . '/images/' . $objFile->icon,
+						'icon'      => TL_ASSETS_URL . 'assets/contao/images/' . $objFile->icon,
 						'mime'      => $objFile->mime,
 						'meta'      => $arrMeta,
 						'extension' => $objFile->extension,

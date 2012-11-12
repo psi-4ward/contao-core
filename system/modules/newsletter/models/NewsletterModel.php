@@ -6,7 +6,7 @@
  * Copyright (C) 2005-2012 Leo Feyer
  * 
  * @package Newsletter
- * @link    http://www.contao.org
+ * @link    http://contao.org
  * @license http://www.gnu.org/licenses/lgpl-3.0.html LGPL
  */
 
@@ -40,7 +40,7 @@ class NewsletterModel extends \Model
 	 * @param integer $varId   The numeric ID or alias name
 	 * @param array   $arrPids An array of newsletter channel IDs
 	 * 
-	 * @return \Model_Collection|null A collection of models or null if there are no sent newsletters
+	 * @return \Model\Collection|null A collection of models or null if there are no sent newsletters
 	 */
 	public static function findSentByParentAndIdOrAlias($varId, $arrPids)
 	{
@@ -66,7 +66,7 @@ class NewsletterModel extends \Model
 	 * 
 	 * @param integer $intPid The newsletter channel ID
 	 * 
-	 * @return \Model_Collection|null A collection of models or null if there are no sent newsletters
+	 * @return \Model\Collection|null A collection of models or null if there are no sent newsletters
 	 */
 	public static function findSentByPid($intPid)
 	{
@@ -87,7 +87,7 @@ class NewsletterModel extends \Model
 	 * 
 	 * @param array $arrPids An array of newsletter channel IDs
 	 * 
-	 * @return \Model_Collection|null A collection of models or null if there are no sent newsletters
+	 * @return \Model\Collection|null A collection of models or null if there are no sent newsletters
 	 */
 	public static function findSentByPids($arrPids)
 	{

@@ -6,7 +6,7 @@
  * Copyright (C) 2005-2012 Leo Feyer
  * 
  * @package Newsletter
- * @link    http://www.contao.org
+ * @link    http://contao.org
  * @license http://www.gnu.org/licenses/lgpl-3.0.html LGPL
  */
 
@@ -22,7 +22,7 @@ namespace Contao;
  *
  * Front end module "newsletter subscribe".
  * @copyright  Leo Feyer 2005-2012
- * @author     Leo Feyer <http://www.contao.org>
+ * @author     Leo Feyer <http://contao.org>
  * @package    Newsletter
  */
 class ModuleSubscribe extends \Module
@@ -129,7 +129,7 @@ class ModuleSubscribe extends \Module
 		$this->Template->submit = specialchars($GLOBALS['TL_LANG']['MSC']['subscribe']);
 		$this->Template->channelsLabel = $GLOBALS['TL_LANG']['MSC']['nl_channels'];
 		$this->Template->emailLabel = $GLOBALS['TL_LANG']['MSC']['emailAddress'];
-		$this->Template->action = $this->getIndexFreeRequest();
+		$this->Template->action = \Environment::get('indexFreeRequest');
 		$this->Template->formId = 'tl_subscribe';
 		$this->Template->id = $this->id;
 		$this->Template->hasError = $blnHasError;
@@ -213,8 +213,10 @@ class ModuleSubscribe extends \Module
 			$this->reload();
 		}
 
+		$varInput = \Idna::encodeEmail(\Input::post('email', true));
+
 		// Validate the e-mail address
-		if (!\Validator::isEmail(\Input::post('email', true)))
+		if (!\Validator::isEmail($varInput))
 		{
 			$_SESSION['SUBSCRIBE_ERROR'] = $GLOBALS['TL_LANG']['ERR']['email'];
 			$this->reload();

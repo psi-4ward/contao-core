@@ -6,7 +6,7 @@
  * Copyright (C) 2005-2012 Leo Feyer
  * 
  * @package Core
- * @link    http://www.contao.org
+ * @link    http://contao.org
  * @license http://www.gnu.org/licenses/lgpl-3.0.html LGPL
  */
 
@@ -30,7 +30,7 @@ require_once '../system/initialize.php';
  *
  * Back end install tool.
  * @copyright  Leo Feyer 2005-2012
- * @author     Leo Feyer <http://www.contao.org>
+ * @author     Leo Feyer <http://contao.org>
  * @package    Core
  */
 class InstallTool extends Backend
@@ -112,10 +112,10 @@ class InstallTool extends Backend
 			$this->outputAndExit();
 		}
 
-		// Authenticate the user
+		// Log in the user
 		if (Input::post('FORM_SUBMIT') == 'tl_login')
 		{
-			$this->authenticateUser();
+			$this->loginUser();
 		}
 
 		// Auto-login on fresh installations
@@ -217,13 +217,22 @@ class InstallTool extends Backend
 		}
 
 		$this->handleRunOnce();
-		$this->import('Database_Installer');
+		$this->import('Database\\Installer', 'Installer');
 
-		$this->Template->dbUpdate = $this->Database_Installer->generateSqlForm();
+		$this->Template->dbUpdate = $this->Installer->generateSqlForm();
 		$this->Template->dbUpToDate = ($this->Template->dbUpdate != '') ? false : true;
 
 		// Import the example website
-		$this->importExampleWebsite();
+		try
+		{
+			$this->importExampleWebsite();
+		}
+		catch (Exception $e)
+		{
+			$this->Template->importException = true;
+			$this->Config->delete("\$GLOBALS['TL_CONFIG']['exampleWebsite']");
+			$this->outputAndExit();
+		}
 
 		// Create an admin user
 		$this->createAdminUser();
@@ -242,6 +251,11 @@ class InstallTool extends Backend
 	 */
 	protected function storeFtpCredentials()
 	{
+		if ($GLOBALS['TL_CONFIG']['installPassword'] != '')
+		{
+			return;
+		}
+
 		$GLOBALS['TL_CONFIG']['useFTP']  = true;
 		$GLOBALS['TL_CONFIG']['ftpHost'] = Input::post('host');
 		$GLOBALS['TL_CONFIG']['ftpPath'] = Input::post('path');
@@ -253,7 +267,7 @@ class InstallTool extends Backend
 		}
 
 		$GLOBALS['TL_CONFIG']['ftpSSL']  = Input::post('ssl');
-		$GLOBALS['TL_CONFIG']['ftpPort'] = (float)Input::post('port');
+		$GLOBALS['TL_CONFIG']['ftpPort'] = (int)Input::post('port');
 
 		// Add a trailing slash
 		if ($GLOBALS['TL_CONFIG']['ftpPath'] != '' && substr($GLOBALS['TL_CONFIG']['ftpPath'], -1) != '/')
@@ -282,7 +296,7 @@ class InstallTool extends Backend
 			$this->Template->ftpUserError = true;
 			$this->outputAndExit();
 		}
-		elseif (ftp_size($resFtp, $GLOBALS['TL_CONFIG']['ftpPath'] . 'assets/contao/debug.css') == -1)
+		elseif (ftp_size($resFtp, $GLOBALS['TL_CONFIG']['ftpPath'] . 'assets/contao/css/debug.css') == -1)
 		{
 			$this->Template->ftpPathError = true;
 			$this->outputAndExit();
@@ -344,15 +358,15 @@ class InstallTool extends Backend
 
 
 	/**
-	 * Authenticate the user
+	 * Log in the user
 	 */
-	protected function authenticateUser()
+	protected function loginUser()
 	{
 		$_SESSION['TL_INSTALL_AUTH'] = '';
 		$_SESSION['TL_INSTALL_EXPIRE'] = 0;
 
-		// The password is up to date (SHA-512)
-		if (strncmp($GLOBALS['TL_CONFIG']['installPassword'], '$6$', 3) === 0)
+		// The password has been generated with crypt()
+		if (Encryption::test($GLOBALS['TL_CONFIG']['installPassword']))
 		{
 			if (crypt(Input::post('password', true), $GLOBALS['TL_CONFIG']['installPassword']) == $GLOBALS['TL_CONFIG']['installPassword'])
 			{
@@ -368,8 +382,8 @@ class InstallTool extends Backend
 
 			if ($blnAuthenticated)
 			{
-				// Store a SHA-512 encrpyted version of the password
-				$strPassword = Encryption::sha512(Input::post('password', true));
+				// Store a crypt() version of the password
+				$strPassword = Encryption::hash(Input::post('password', true));
 				$this->Config->update("\$GLOBALS['TL_CONFIG']['installPassword']", $strPassword);
 
 				$this->setAuthCookie();
@@ -406,7 +420,7 @@ class InstallTool extends Backend
 		// Save the password
 		else
 		{
-			$strPassword = Encryption::sha512($strPassword);
+			$strPassword = Encryption::hash($strPassword);
 			$this->Config->update("\$GLOBALS['TL_CONFIG']['installPassword']", $strPassword);
 			$this->reload();
 		}
@@ -551,6 +565,20 @@ class InstallTool extends Backend
 	 */
 	protected function importExampleWebsite()
 	{
+		$strTemplates = '<option value="">-</option>';
+
+		foreach (scan(TL_ROOT . '/templates') as $strFile)
+		{
+			if (preg_match('/.sql$/', $strFile))
+			{
+				$strTemplates .= sprintf('<option value="%s">%s</option>', $strFile, specialchars($strFile));
+			}
+		}
+
+		$this->Template->templates = $strTemplates;
+
+		// Process the request after the select menu has been generated
+		// so the options show up even if the import throws an Exception
 		if (Input::post('FORM_SUBMIT') == 'tl_tutorial')
 		{
 			$this->Template->emptySelection = true;
@@ -584,17 +612,6 @@ class InstallTool extends Backend
 			}
 		}
 
-		$strTemplates = '<option value="">-</option>';
-
-		foreach (scan(TL_ROOT . '/templates') as $strFile)
-		{
-			if (preg_match('/.sql$/', $strFile))
-			{
-				$strTemplates .= sprintf('<option value="%s">%s</option>', $strFile, specialchars($strFile));
-			}
-		}
-
-		$this->Template->templates = $strTemplates;
 		$this->Template->dateImported = $this->parseDate($GLOBALS['TL_CONFIG']['datimFormat'], $GLOBALS['TL_CONFIG']['exampleWebsite']);
 	}
 
@@ -644,12 +661,17 @@ class InstallTool extends Backend
 				elseif (Input::post('name') != '' && Input::post('email', true) != '' && Input::post('username', true) != '')
 				{
 					$time = time();
-					$strPassword = Encryption::sha512(Input::post('pass', true));
+					$strPassword = Encryption::hash(Input::post('pass', true));
 
 					$this->Database->prepare("INSERT INTO tl_user (tstamp, name, email, username, password, admin, showHelp, useRTE, useCE, thumbnails, dateAdded) VALUES ($time, ?, ?, ?, ?, 1, 1, 1, 1, 1, $time)")
 								   ->execute(Input::post('name'), Input::post('email', true), Input::post('username', true), $strPassword);
 
 					$this->Config->update("\$GLOBALS['TL_CONFIG']['adminEmail']", Input::post('email', true));
+
+					// Scan the upload folder
+					$this->import('Database\\Updater', 'Updater');
+					$this->Updater->scanUploadFolder();
+
 					$this->reload();
 				}
 
@@ -670,6 +692,11 @@ class InstallTool extends Backend
 	 */
 	protected function createLocalConfigurationFiles()
 	{
+		if ($GLOBALS['TL_CONFIG']['installPassword'] != '')
+		{
+			return;
+		}
+
 		// The localconfig.php file is created by the Config class
 		foreach (array('dcaconfig', 'initconfig', 'langconfig') as $file)
 		{
@@ -699,7 +726,7 @@ class InstallTool extends Backend
 	 */
 	protected function outputAndExit()
 	{
-		$this->Template->theme = $this->getTheme();
+		$this->Template->theme = Backend::getTheme();
 		$this->Template->base = Environment::get('base');
 		$this->Template->language = $GLOBALS['TL_LANGUAGE'];
 		$this->Template->charset = $GLOBALS['TL_CONFIG']['characterSet'];
@@ -726,8 +753,8 @@ class InstallTool extends Backend
 		{
 			if (Input::post('FORM_SUBMIT') == 'tl_28update')
 			{
-				$this->import('Database_Updater');
-				$this->Database_Updater->run28Update();
+				$this->import('Database\\Updater', 'Updater');
+				$this->Updater->run28Update();
 				$this->reload();
 			}
 
@@ -746,12 +773,12 @@ class InstallTool extends Backend
 		{
 			if (Input::post('FORM_SUBMIT') == 'tl_29update')
 			{
-				$this->import('Database_Updater');
-				$this->Database_Updater->run29Update();
+				$this->import('Database\\Updater', 'Updater');
+				$this->Updater->run29Update();
 				$this->reload();
 			}
 
-			$this->Template->is28Update = true;
+			$this->Template->is29Update = true;
 			$this->outputAndExit();
 		}
 	}
@@ -772,8 +799,8 @@ class InstallTool extends Backend
 				{
 					if (Input::post('FORM_SUBMIT') == 'tl_292update')
 					{
-						$this->import('Database_Updater');
-						$this->Database_Updater->run292Update();
+						$this->import('Database\\Updater', 'Updater');
+						$this->Updater->run292Update();
 						$this->reload();
 					}
 
@@ -794,8 +821,8 @@ class InstallTool extends Backend
 		{
 			if (Input::post('FORM_SUBMIT') == 'tl_210update')
 			{
-				$this->import('Database_Updater');
-				$this->Database_Updater->run210Update();
+				$this->import('Database\\Updater', 'Updater');
+				$this->Updater->run210Update();
 				$this->reload();
 			}
 
@@ -816,7 +843,7 @@ class InstallTool extends Backend
 			return;
 		}
 
-		$objRow = $this->Database->query("SELECT COUNT(*) AS count FROM tl_user");
+		$objRow = $this->Database->query("SELECT COUNT(*) AS count FROM tl_page");
 
 		// Still a fresh installation
 		if ($objRow->count < 1)
@@ -829,9 +856,30 @@ class InstallTool extends Backend
 		{
 			if (Input::post('FORM_SUBMIT') == 'tl_30update')
 			{
-				$this->import('Database_Updater');
-				$this->Database_Updater->run300Update();
+				$this->import('Database\\Updater', 'Updater');
+				$this->Updater->run300Update();
 				$this->reload();
+			}
+
+			// Disable the tasks extension (see #4907)
+			if (is_dir(TL_ROOT . '/system/modules/tasks'))
+			{
+				$objFile = new File('system/modules/tasks/.skip');
+				$objFile->write('Disabled during the version 3 update (see #4907)');
+				$objFile->close();
+			}
+
+			// Save the old upload path in the localconfig.php
+			if ($GLOBALS['TL_CONFIG']['uploadPath'] == 'files' && is_dir(TL_ROOT . '/tl_files'))
+			{
+				$GLOBALS['TL_CONFIG']['uploadPath'] = 'tl_files';
+				$this->Config->update("\$GLOBALS['TL_CONFIG']['uploadPath']", 'tl_files');
+			}
+
+			// Show a warning if the user has renamed the tl_files directory already (see #4626)
+			if (!is_dir(TL_ROOT . '/' . $GLOBALS['TL_CONFIG']['uploadPath']))
+			{
+				$this->Template->filesWarning = sprintf($GLOBALS['TL_LANG']['tl_install']['filesWarning'], '<a href="https://gist.github.com/3304014" target="_blank">https://gist.github.com/3304014</a>');
 			}
 
 			$this->Template->step = 1;
@@ -846,8 +894,8 @@ class InstallTool extends Backend
 		{
 			if (Input::post('FORM_SUBMIT') == 'tl_30update')
 			{
-				$this->import('Database_Updater');
-				$this->Database_Updater->scanUploadFolder();
+				$this->import('Database\\Updater', 'Updater');
+				$this->Updater->scanUploadFolder();
 				$this->Config->update("\$GLOBALS['TL_CONFIG']['checkFileTree']", true);
 				$this->reload();
 			}
@@ -862,8 +910,8 @@ class InstallTool extends Backend
 		{
 			if (Input::post('FORM_SUBMIT') == 'tl_30update')
 			{
-				$this->import('Database_Updater');
-				$this->Database_Updater->updateFileTreeFields();
+				$this->import('Database\\Updater', 'Updater');
+				$this->Updater->updateFileTreeFields();
 				$this->Config->update("\$GLOBALS['TL_CONFIG']['checkFileTree']", false);
 				$this->reload();
 			}

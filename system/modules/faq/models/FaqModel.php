@@ -6,7 +6,7 @@
  * Copyright (C) 2005-2012 Leo Feyer
  * 
  * @package Faq
- * @link    http://www.contao.org
+ * @link    http://contao.org
  * @license http://www.gnu.org/licenses/lgpl-3.0.html LGPL
  */
 
@@ -66,7 +66,7 @@ class FaqModel extends \Model
 	 * 
 	 * @param array $arrPids An array of FAQ category IDs
 	 * 
-	 * @return \Model_Collection|null A collection of models or null if there are no FAQs
+	 * @return \Model\Collection|null A collection of models or null if there are no FAQs
 	 */
 	public static function findPublishedByPids($arrPids)
 	{
@@ -76,6 +76,13 @@ class FaqModel extends \Model
 		}
 
 		$t = static::$strTable;
-		return static::findBy(array("$t.pid IN(" . implode(',', array_map('intval', $arrPids)) . ")"), null, array('order'=>"$t.pid, $t.sorting"));
+		$arrColumns = array("$t.pid IN(" . implode(',', array_map('intval', $arrPids)) . ")");
+
+		if (!BE_USER_LOGGED_IN)
+		{
+			$arrColumns[] = "$t.published=1";
+		}
+
+		return static::findBy($arrColumns, null, array('order'=>"$t.pid, $t.sorting"));
 	}
 }

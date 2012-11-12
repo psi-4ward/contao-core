@@ -6,7 +6,7 @@
  * Copyright (C) 2005-2012 Leo Feyer
  * 
  * @package Core
- * @link    http://www.contao.org
+ * @link    http://contao.org
  * @license http://www.gnu.org/licenses/lgpl-3.0.html LGPL
  */
 
@@ -16,7 +16,7 @@
  * Please visit http://tinymce.moxiecode.com for more information.
  */
 if ($GLOBALS['TL_CONFIG']['useRTE']): ?>
-<script src="<?php echo $this->base; ?>plugins/tinyMCE/tiny_mce_gzip.js"></script>
+<script src="<?php echo $this->base; ?>assets/tinymce/tiny_mce_gzip.js"></script>
 <script>
 tinyMCE_GZ.init({
   plugins : "autosave,directionality,inlinepopups,legacyoutput,paste,save,searchreplace,spellchecker,tabfocus,template,typolinks",

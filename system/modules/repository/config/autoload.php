@@ -6,7 +6,7 @@
  * Copyright (C) 2005-2012 Leo Feyer
  * 
  * @package Repository
- * @link    http://www.contao.org
+ * @link    http://contao.org
  * @license http://www.gnu.org/licenses/lgpl-3.0.html LGPL
  */
 
@@ -22,7 +22,6 @@ ClassLoader::addClasses(array
 	'RepositoryBackendTheme'  => 'system/modules/repository/classes/RepositoryBackendTheme.php',
 	'RepositoryCatalog'       => 'system/modules/repository/classes/RepositoryCatalog.php',
 	'RepositoryManager'       => 'system/modules/repository/classes/RepositoryManager.php',
-	'RepositorySettings'      => 'system/modules/repository/classes/RepositorySettings.php',
 ));
 
 

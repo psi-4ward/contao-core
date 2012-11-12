@@ -6,7 +6,7 @@
  * Copyright (C) 2005-2012 Leo Feyer
  * 
  * @package Core
- * @link    http://www.contao.org
+ * @link    http://contao.org
  * @license http://www.gnu.org/licenses/lgpl-3.0.html LGPL
  */
 
@@ -23,7 +23,7 @@ require 'system/initialize.php';
  *
  * Main front end controller.
  * @copyright  Leo Feyer 2005-2012
- * @author     Leo Feyer <http://www.contao.org>
+ * @author     Leo Feyer <http://contao.org>
  * @package    Core
  */
 class Index extends Frontend
@@ -96,8 +96,7 @@ class Index extends Frontend
 			// Order by domain and language
 			while ($objPage->next())
 			{
-				// Pass the ID so a new page object is created!
-				$objCurrentPage = $this->getPageDetails($objPage->id);
+				$objCurrentPage = $objPage->current()->loadDetails();
 
 				$domain = $objCurrentPage->domain ?: '*';
 				$arrPages[$domain][$objCurrentPage->rootLanguage] = $objCurrentPage;
@@ -109,21 +108,24 @@ class Index extends Frontend
 				}
 			}
 
+			$strHost = Environment::get('host');
+
 			// Look for a root page whose domain name matches the host name
-			if (isset($arrPages[Environment::get('host')]))
+			if (isset($arrPages[$strHost]))
 			{
-				$arrLangs = $arrPages[Environment::get('host')];
+				$arrLangs = $arrPages[$strHost];
 			}
 			else
 			{
 				$arrLangs = $arrPages['*']; // Empty domain
 			}
 
-			// Try to find a page matching the language parameter
+			// Use the first result (see #4872)
 			if (!$GLOBALS['TL_CONFIG']['addLanguageToUrl'])
 			{
-				$objNewPage = $arrLangs['*']; // Fallback language
+				$objNewPage = current($arrLangs);
 			}
+			// Try to find a page matching the language parameter
 			elseif (($lang = Input::get('language')) != '' && isset($arrLangs[$lang]))
 			{
 				$objNewPage = $arrLangs[$lang];
@@ -137,11 +139,17 @@ class Index extends Frontend
 		}
 
 		// Throw a 404 error if the page could not be found or the result is still ambiguous
-		if ($objPage === null || ($objPage instanceof Model_Collection && $objPage->count() != 1))
+		if ($objPage === null || ($objPage instanceof Model\Collection && $objPage->count() != 1))
 		{
 			$this->User->authenticate();
 			$objHandler = new $GLOBALS['TL_PTY']['error_404']();
 			$objHandler->generate($pageId);
+		}
+
+		// Make sure $objPage is a Model
+		if ($objPage instanceof Model\Collection)
+		{
+			$objPage = $objPage->current();
 		}
 
 		// Load a website root page object (will redirect to the first active regular page)
@@ -154,7 +162,7 @@ class Index extends Frontend
 		// Inherit the settings from the parent pages if it has not been done yet
 		if (!is_bool($objPage->protected))
 		{
-			$objPage = $this->getPageDetails($objPage);
+			$objPage->loadDetails();
 		}
 
 		// Use the global date format if none is set
@@ -174,11 +182,11 @@ class Index extends Frontend
 		// Set the admin e-mail address
 		if ($objPage->adminEmail != '')
 		{
-			list($GLOBALS['TL_ADMIN_NAME'], $GLOBALS['TL_ADMIN_EMAIL']) = $this->splitFriendlyName($objPage->adminEmail);
+			list($GLOBALS['TL_ADMIN_NAME'], $GLOBALS['TL_ADMIN_EMAIL']) = String::splitFriendlyEmail($objPage->adminEmail);
 		}
 		else
 		{
-			list($GLOBALS['TL_ADMIN_NAME'], $GLOBALS['TL_ADMIN_EMAIL']) = $this->splitFriendlyName($GLOBALS['TL_CONFIG']['adminEmail']);
+			list($GLOBALS['TL_ADMIN_NAME'], $GLOBALS['TL_ADMIN_EMAIL']) = String::splitFriendlyEmail($GLOBALS['TL_CONFIG']['adminEmail']);
 		}
 
 		// Exit if the root page has not been published (see #2425) and
@@ -248,6 +256,9 @@ class Index extends Frontend
 				$objHandler->generate($objPage);
 				break;
 		}
+
+		// Stop the script (see #4565)
+		exit;
 	}
 
 
@@ -364,7 +375,7 @@ class Index extends Frontend
 
 		// Replace the insert tags and then re-replace the request_token
 		// tag in case a form element has been loaded via insert tag
-		$strBuffer = $this->replaceInsertTags($strBuffer);
+		$strBuffer = $this->replaceInsertTags($strBuffer, false);
 		$strBuffer = str_replace(array('{{request_token}}', '[{]', '[}]'), array(REQUEST_TOKEN, '{{', '}}'), $strBuffer);
 
 		// Content type

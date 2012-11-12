@@ -6,7 +6,7 @@
  * Copyright (C) 2005-2012 Leo Feyer
  * 
  * @package Core
- * @link    http://www.contao.org
+ * @link    http://contao.org
  * @license http://www.gnu.org/licenses/lgpl-3.0.html LGPL
  */
 
@@ -22,7 +22,7 @@ namespace Contao;
  *
  * Front end content element "download".
  * @copyright  Leo Feyer 2005-2012
- * @author     Leo Feyer <http://www.contao.org>
+ * @author     Leo Feyer <http://contao.org>
  * @package    Core
  */
 class ContentDownload extends \ContentElement
@@ -70,22 +70,10 @@ class ContentDownload extends \ContentElement
 
 		$file = \Input::get('file', true);
 
-		// Send the file to the browser
-		if ($file != '')
+		// Send the file to the browser and do not send a 404 header (see #4632)
+		if ($file != '' && $file == $objFile->path)
 		{
-			if ($file == $objFile->path)
-			{
-				$this->sendFileToBrowser($file);
-			}
-
-			// Do not index or cache the page
-			global $objPage;
-			$objPage->noSearch = 1;
-			$objPage->cache = 0;
-
-			// Send a 404 header
-			header('HTTP/1.1 404 Not Found');
-			return '<p class="error">' . sprintf($GLOBALS['TL_LANG']['ERR']['download'], $file) . '</p>';
+			$this->sendFileToBrowser($file);
 		}
 
 		$this->singleSRC = $objFile->path;
@@ -109,7 +97,7 @@ class ContentDownload extends \ContentElement
 		$this->Template->title = specialchars($this->titleText ?: $this->linkTitle);
 		$this->Template->href = \Environment::get('request') . (($GLOBALS['TL_CONFIG']['disableAlias'] || strpos(\Environment::get('request'), '?') !== false) ? '&amp;' : '?') . 'file=' . $this->urlEncode($objFile->value);
 		$this->Template->filesize = $this->getReadableSize($objFile->filesize, 1);
-		$this->Template->icon = TL_FILES_URL . 'system/themes/' . $this->getTheme() . '/images/' . $objFile->icon;
+		$this->Template->icon = TL_ASSETS_URL . 'assets/contao/images/' . $objFile->icon;
 		$this->Template->mime = $objFile->mime;
 		$this->Template->extension = $objFile->extension;
 		$this->Template->path = $objFile->dirname;

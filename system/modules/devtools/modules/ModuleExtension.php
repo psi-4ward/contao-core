@@ -6,7 +6,7 @@
  * Copyright (C) 2005-2012 Leo Feyer
  * 
  * @package Devtools
- * @link    http://www.contao.org
+ * @link    http://contao.org
  * @license http://www.gnu.org/licenses/lgpl-3.0.html LGPL
  */
 
@@ -22,7 +22,7 @@ namespace Contao;
  *
  * Back end module "extension".
  * @copyright  Leo Feyer 2005-2012
- * @author     Leo Feyer <http://www.contao.org>
+ * @author     Leo Feyer <http://contao.org>
  * @package    Devtools
  */
 class ModuleExtension extends \BackendModule
@@ -69,22 +69,22 @@ class ModuleExtension extends \BackendModule
 				return;
 			}
 
-			// .htaccess
-			$tplHtaccess = new \BackendTemplate('dev_htaccess');
-			$objHtaccess = new \File('system/modules/' . $objModule->folder . '/.htaccess');
-			$objHtaccess->write($tplHtaccess->parse());
-			$objHtaccess->close();
-
 			// config/config.php
 			$tplConfig = $this->newTemplate('dev_config', $objModule);
 			$objConfig = new \File('system/modules/' . $objModule->folder . '/config/config.php');
 			$objConfig->write($tplConfig->parse());
 			$objConfig->close();
 
+			// config/autoload.ini
+			$tplConfig = $this->newTemplate('dev_ini', $objModule);
+			$objConfig = new \File('system/modules/' . $objModule->folder . '/config/autoload.ini');
+			$objConfig->write($tplConfig->parse());
+			$objConfig->close();
+
 			// Back end
 			if ($objModule->addBeMod)
 			{
-				$arrClasses = trimsplit(',', $objModule->beClasses);
+				$arrClasses = array_filter(trimsplit(',', $objModule->beClasses));
 
 				// Classes
 				foreach ($arrClasses as $strClass)
@@ -97,9 +97,9 @@ class ModuleExtension extends \BackendModule
 					$objClass->close();
 				}
 
-				$arrTables = trimsplit(',', $objModule->beTables);
+				$arrTables = array_filter(trimsplit(',', $objModule->beTables));
 
-				// Data container files
+				// Back end data container files
 				foreach ($arrTables as $strTable)
 				{
 					$tplTable = $this->newTemplate('dev_dca', $objModule);
@@ -110,7 +110,7 @@ class ModuleExtension extends \BackendModule
 					$objTable->close();
 				}
 
-				$arrTemplates = trimsplit(',', $objModule->beTemplates);
+				$arrTemplates = array_filter(trimsplit(',', $objModule->beTemplates));
 
 				// Templates
 				foreach ($arrTemplates as $strTemplate)
@@ -125,7 +125,7 @@ class ModuleExtension extends \BackendModule
 			// Front end
 			if ($objModule->addFeMod)
 			{
-				$arrClasses = trimsplit(',', $objModule->feClasses);
+				$arrClasses = array_filter(trimsplit(',', $objModule->feClasses));
 
 				// Classes
 				foreach ($arrClasses as $strClass)
@@ -139,7 +139,18 @@ class ModuleExtension extends \BackendModule
 					$objClass->close();
 				}
 
-				$arrTables = trimsplit(',', $objModule->feTables);
+				$arrTables = array_filter(trimsplit(',', $objModule->feTables));
+
+				// Front end data container files
+				foreach ($arrTables as $strTable)
+				{
+					$tplTable = $this->newTemplate('dev_feDca', $objModule);
+					$tplTable->table = $strTable;
+
+					$objTable = new \File('system/modules/' . $objModule->folder . '/dca/' . $strTable . '.php');
+					$objTable->write($tplTable->parse());
+					$objTable->close();
+				}
 
 				// Models
 				foreach ($arrTables as $strTable)
@@ -155,7 +166,7 @@ class ModuleExtension extends \BackendModule
 					$objTable->close();
 				}
 
-				$arrTemplates = trimsplit(',', $objModule->feTemplates);
+				$arrTemplates = array_filter(trimsplit(',', $objModule->feTemplates));
 
 				// Templates
 				foreach ($arrTemplates as $strTemplate)
@@ -171,14 +182,10 @@ class ModuleExtension extends \BackendModule
 			// Language packs
 			if ($objModule->addLanguage)
 			{
-				$arrLanguages = trimsplit(',', $objModule->languages);
+				$arrLanguages = array_filter(trimsplit(',', $objModule->languages));
 
 				foreach ($arrLanguages as $strLanguage)
 				{
-					$objHtaccess = new \File('system/modules/' . $objModule->folder . '/languages/' . $strLanguage . '/.htaccess');
-					$objHtaccess->write($tplHtaccess->parse());
-					$objHtaccess->close();
-
 					// languages/xx/default.php
 					$tplLanguage = $this->newTemplate('dev_default', $objModule);
 					$tplLanguage->language = $strLanguage;
@@ -206,6 +213,12 @@ class ModuleExtension extends \BackendModule
 				}
 			}
 
+			// Public folder
+			$tplConfig = $this->newTemplate('dev_htaccess', $objModule);
+			$objConfig = new \File('system/modules/' . $objModule->folder . '/assets/.htaccess');
+			$objConfig->write($tplConfig->parse());
+			$objConfig->close();
+
 			\Message::addConfirmation($GLOBALS['TL_LANG']['tl_extension']['confirm']);
 			$this->reload();
 		}
@@ -227,10 +240,10 @@ class ModuleExtension extends \BackendModule
 	/**
 	 * Return a new template object
 	 * @param string
-	 * @param \Database_Result
+	 * @param \Database\Result
 	 * @return \BackendTemplate
 	 */
-	protected function newTemplate($strTemplate, \Database_Result $objModule)
+	protected function newTemplate($strTemplate, \Database\Result $objModule)
 	{
 		$objTemplate = new \BackendTemplate($strTemplate);
 

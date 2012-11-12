@@ -6,7 +6,7 @@
  * Copyright (C) 2005-2012 Leo Feyer
  * 
  * @package Faq
- * @link    http://www.contao.org
+ * @link    http://contao.org
  * @license http://www.gnu.org/licenses/lgpl-3.0.html LGPL
  */
 
@@ -22,7 +22,7 @@ namespace Contao;
  *
  * Provide methods regarding FAQs.
  * @copyright  Leo Feyer 2008-2012
- * @author     Leo Feyer <http://www.contao.org>
+ * @author     Leo Feyer <http://contao.org>
  * @package    Faq
  */
 class ModuleFaq extends \Frontend
@@ -41,7 +41,7 @@ class ModuleFaq extends \Frontend
 
 		if ($intRoot > 0)
 		{
-			$arrRoot = $this->getChildRecords($intRoot, 'tl_page');
+			$arrRoot = $this->Database->getChildRecords($intRoot, 'tl_page');
 		}
 
 		$arrProcessed = array();
@@ -70,7 +70,13 @@ class ModuleFaq extends \Frontend
 				if (!isset($arrProcessed[$objFaq->jumpTo]))
 				{
 					$domain = \Environment::get('base');
-					$objParent = $this->getPageDetails($objFaq->jumpTo);
+					$objParent = \PageModel::findWithDetails($objFaq->jumpTo);
+
+					// The target page does not exist
+					if ($objParent === null)
+					{
+						continue;
+					}
 
 					if ($objParent->domain != '')
 					{

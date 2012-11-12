@@ -6,7 +6,7 @@
  * Copyright (C) 2005-2012 Leo Feyer
  * 
  * @package Core
- * @link    http://www.contao.org
+ * @link    http://contao.org
  * @license http://www.gnu.org/licenses/lgpl-3.0.html LGPL
  */
 
@@ -22,7 +22,7 @@ namespace Contao;
  *
  * Parent class for back end modules that are not using the default engine.
  * @copyright  Leo Feyer 2005-2012
- * @author     Leo Feyer <http://www.contao.org>
+ * @author     Leo Feyer <http://contao.org>
  * @package    Core
  */
 abstract class BackendModule extends \Backend
@@ -81,14 +81,12 @@ abstract class BackendModule extends \Backend
 			return $this->arrData[$strKey];
 		}
 
-		try
+		if ($this->objDc->$strKey !== null)
 		{
 			return $this->objDc->$strKey;
 		}
-		catch (\Exception $e)
-		{
-			return parent::__get($strKey);
-		}
+
+		return parent::__get($strKey);
 	}
 
 

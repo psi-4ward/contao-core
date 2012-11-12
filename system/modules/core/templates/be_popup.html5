@@ -9,20 +9,20 @@
   $objCombiner->add('system/themes/'. $this->theme .'/basic.css');
   $objCombiner->add('system/themes/'. $this->theme .'/popup.css');
   echo $objCombiner->getCombinedFile();
-?>" media="all">
-<!--[if IE]><link rel="stylesheet" href="<?php echo TL_SCRIPT_URL; ?>system/themes/<?php echo $this->theme; ?>/iefixes.css"><![endif]-->
+?>">
+<!--[if IE]><link rel="stylesheet" href="<?php echo TL_ASSETS_URL; ?>system/themes/<?php echo $this->theme; ?>/iefixes.css"><![endif]-->
 <?php echo $this->stylesheets; ?>
 <script><?php echo $this->getLocaleString(); ?></script>
 <script src="<?php
   $objCombiner = new Combiner();
-  $objCombiner->add('plugins/mootools/core/' . MOOTOOLS . '/mootools.js', MOOTOOLS);
-  $objCombiner->add('plugins/mootools/mootao/Mootao.js');
-  $objCombiner->add('system/modules/core/html/contao.js');
+  $objCombiner->add('assets/mootools/core/' . MOOTOOLS . '/mootools.js', MOOTOOLS);
+  $objCombiner->add('assets/mootools/mootao/Mootao.js');
+  $objCombiner->add('assets/contao/js/core.js');
   echo $objCombiner->getCombinedFile();
 ?>"></script>
 <script><?php echo $this->getDateString(); ?></script>
 <?php echo $this->javascripts; ?>
-<!--[if lt IE 9]><script src="<?php echo TL_PLUGINS_URL; ?>plugins/html5shim/html5-<?php echo HTML5SHIM; ?>.js"></script><![endif]-->
+<!--[if lt IE 9]><script src="<?php echo TL_ASSETS_URL; ?>assets/html5shiv/<?php echo HTML5SHIV; ?>/html5shiv.js"></script><![endif]-->
 </head>
 <body class="__ua__ popup">
 
@@ -63,7 +63,7 @@
 </table>
 
 <div id="download">
-<a href="<?php echo $this->href; ?>" title="<?php echo $this->downloadTitle; ?>"><img src="system/themes/<?php echo $this->theme; ?>/images/<?php echo $this->icon; ?>" width="18" height="18" class="mime_icon"> <?php echo $this->download; ?></a>
+<a href="<?php echo $this->href; ?>" title="<?php echo $this->downloadTitle; ?>"><img src="<?php echo TL_ASSETS_URL; ?>assets/contao/images/<?php echo $this->icon; ?>" width="18" height="18" class="mime_icon"> <?php echo $this->download; ?></a>
 </div>
 <?php if ($this->isImage): ?>
 

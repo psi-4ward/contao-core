@@ -6,7 +6,7 @@
  * Copyright (C) 2005-2012 Leo Feyer
  * 
  * @package Core
- * @link    http://www.contao.org
+ * @link    http://contao.org
  * @license http://www.gnu.org/licenses/lgpl-3.0.html LGPL
  */
 
@@ -22,7 +22,7 @@ namespace Contao;
  *
  * Parent class for content elements.
  * @copyright  Leo Feyer 2005-2012
- * @author     Leo Feyer <http://www.contao.org>
+ * @author     Leo Feyer <http://contao.org>
  * @package    Core
  */
 abstract class ContentElement extends \Frontend
@@ -65,9 +65,13 @@ abstract class ContentElement extends \Frontend
 	 */
 	public function __construct($objElement)
 	{
-		if ($objElement instanceof \Model || $objElement instanceof \Model_Collection)
+		if ($objElement instanceof \Model)
 		{
 			$this->objModel = $objElement;
+		}
+		elseif ($objElement instanceof \Model\Collection)
+		{
+			$this->objModel = $objElement->current();
 		}
 
 		parent::__construct();
@@ -168,4 +172,28 @@ abstract class ContentElement extends \Frontend
 	 * Compile the content element
 	 */
 	abstract protected function compile();
+
+
+	/**
+	 * Find a content element in the TL_CTE array and return the class name
+	 * 
+	 * @param string $strName The content element name
+	 * 
+	 * @return string The class name
+	 */
+	public static function findClass($strName)
+	{
+		foreach ($GLOBALS['TL_CTE'] as $v)
+		{
+			foreach ($v as $kk=>$vv)
+			{
+				if ($kk == $strName)
+				{
+					return $vv;
+				}
+			}
+		}
+
+		return '';
+	}
 }

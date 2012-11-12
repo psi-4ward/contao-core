@@ -6,7 +6,7 @@
  * Copyright (C) 2005-2012 Leo Feyer
  * 
  * @package Core
- * @link    http://www.contao.org
+ * @link    http://contao.org
  * @license http://www.gnu.org/licenses/lgpl-3.0.html LGPL
  */
 
@@ -22,7 +22,7 @@ namespace Contao;
  *
  * Front end content element "code".
  * @copyright  Leo Feyer 2005-2012
- * @author     Leo Feyer <http://www.contao.org>
+ * @author     Leo Feyer <http://contao.org>
  * @package    Core
  */
 class ContentCode extends \ContentElement
@@ -69,6 +69,7 @@ class ContentCode extends \ContentElement
 		{
 			$arrMapper = array
 			(
+				'ApacheConf' => 'shBrushApacheConf',
 				'AS3'        => 'shBrushAS3',
 				'Bash'       => 'shBrushBash',
 				'C'          => 'shBrushCpp',
@@ -77,6 +78,7 @@ class ContentCode extends \ContentElement
 				'Delphi'     => 'shBrushDelphi',
 				'Diff'       => 'shBrushDiff',
 				'Groovy'     => 'shBrushGroovy',
+				'HTML'       => 'shBrushXml',
 				'Java'       => 'shBrushJava',
 				'JavaFX'     => 'shBrushJavaFX',
 				'JavaScript' => 'shBrushJScript',
@@ -101,42 +103,18 @@ class ContentCode extends \ContentElement
 			}
 
 			// Add the style sheet
-			$GLOBALS['TL_CSS'][] = 'plugins/highlighter/'.HIGHLIGHTER.'/shCore.css';
+			$GLOBALS['TL_CSS'][] = 'assets/highlighter/'.HIGHLIGHTER.'/shCore.css||static';
 
-			// Add the core scripts
-			$objCombiner = new \Combiner();
-			$objCombiner->add('plugins/highlighter/'.HIGHLIGHTER.'/XRegExp.js', HIGHLIGHTER);
-			$objCombiner->add('plugins/highlighter/'.HIGHLIGHTER.'/shCore.js', HIGHLIGHTER);
-			$GLOBALS['TL_JAVASCRIPT'][] = $objCombiner->getCombinedFile(TL_PLUGINS_URL);
+			// Add the JavaScripts
+			$GLOBALS['TL_HIGHLIGHTER'][] = 'assets/highlighter/'.HIGHLIGHTER.'/XRegExp.js';
+			$GLOBALS['TL_HIGHLIGHTER'][] = 'assets/highlighter/'.HIGHLIGHTER.'/shCore.js';
+			$GLOBALS['TL_HIGHLIGHTER'][] = 'assets/highlighter/'.HIGHLIGHTER.'/' . $arrMapper[$this->highlight] . '.js';
 
-			// Add the brushes separately in case there are multiple code elements
-			$GLOBALS['TL_JAVASCRIPT'][] = 'plugins/highlighter/'.HIGHLIGHTER.'/' . $arrMapper[$this->highlight] . '.js';
-
-			global $objPage;
-
-			// Initialization
-			if ($objPage->outputFormat == 'xhtml')
+			// The shBrushXml.js file is required for the "html-script" option (see #4748)
+			if ($this->shClass != '' && strpos($this->shClass, 'html-script') !== false)
 			{
-				$strInit  = '<script type="text/javascript">' . "\n";
-				$strInit .= '/* <![CDATA[ */' . "\n";
+				$GLOBALS['TL_HIGHLIGHTER'][] = 'assets/highlighter/'.HIGHLIGHTER.'/shBrushXml.js';
 			}
-			else
-			{
-				$strInit  = '<script>' . "\n";
-			}
-
-			$strInit .= 'SyntaxHighlighter.defaults.toolbar = false;' . "\n";
-			$strInit .= 'SyntaxHighlighter.all();' . "\n";
-
-			if ($objPage->outputFormat == 'xhtml')
-			{
-				$strInit .= '/* ]]> */' . "\n";
-			}
-
-			$strInit .= '</script>';
-
-			// Add the initialization script to the head section and not (!) to TL_JAVASCRIPT
-			$GLOBALS['TL_HEAD'][] = $strInit;
 		}
 	}
 }

@@ -6,7 +6,7 @@
  * Copyright (C) 2005-2012 Leo Feyer
  * 
  * @package Core
- * @link    http://www.contao.org
+ * @link    http://contao.org
  * @license http://www.gnu.org/licenses/lgpl-3.0.html LGPL
  */
 
@@ -22,7 +22,7 @@ namespace Contao;
  *
  * Provide methods to handle file uploads in the back end.
  * @copyright  Leo Feyer 2005-2012
- * @author     Leo Feyer <http://www.contao.org>
+ * @author     Leo Feyer <http://contao.org>
  * @package    Core
  */
 class FileUpload extends \Backend
@@ -39,6 +39,12 @@ class FileUpload extends \Backend
 	 * @var boolean
 	 */
 	protected $blnHasResized = false;
+
+	/**
+	 * Field name
+	 * @var string
+	 */
+	protected $strName = 'files';
 
 
 	/**
@@ -71,28 +77,32 @@ class FileUpload extends \Backend
 
 
 	/**
-	 * Check the uploaded files and move them to the target directory
+	 * Override the field name
 	 * @param string
+	 */
+	public function setName($strName)
+	{
+		$this->strName = $strName;
+	}
+
+
+	/**
+	 * Check the uploaded files and move them to the target directory
 	 * @param string
 	 * @return array
 	 * @throws \Exception
 	 */
-	public function uploadTo($strTarget, $strKey)
+	public function uploadTo($strTarget)
 	{
 		if ($strTarget == '' || strpos($strTarget, '../') !== false)
 		{
 			throw new \Exception("Invalid target path $strTarget");
 		}
 
-		if ($strKey == '')
-		{
-			throw new \Exception('The key must not be empty');
-		}
-
 		$maxlength_kb = $this->getMaximumUploadSize();
 		$maxlength_kb_readable = $this->getReadableSize($maxlength_kb);
 		$arrUploaded = array();
-		$arrFiles = $this->getFilesFromGlobal($strKey);
+		$arrFiles = $this->getFilesFromGlobal();
 
 		foreach ($arrFiles as $file)
 		{
@@ -129,14 +139,14 @@ class FileUpload extends \Backend
 			// Move the file to its destination
 			else
 			{
-				$pathinfo = pathinfo($file['name']);
+				$strExtension = pathinfo($file['name'], PATHINFO_EXTENSION);
 				$arrAllowedTypes = trimsplit(',', strtolower($GLOBALS['TL_CONFIG']['uploadTypes']));
 
 				// File type not allowed
-				if (!in_array(strtolower($pathinfo['extension']), $arrAllowedTypes))
+				if (!in_array(strtolower($strExtension), $arrAllowedTypes))
 				{
-					\Message::addError(sprintf($GLOBALS['TL_LANG']['ERR']['filetype'], $pathinfo['extension']));
-					$this->log('File type "'.$pathinfo['extension'].'" is not allowed to be uploaded ('.$file['name'].')', 'Uploader uploadTo()', TL_ERROR);
+					\Message::addError(sprintf($GLOBALS['TL_LANG']['ERR']['filetype'], $strExtension));
+					$this->log('File type "'.$strExtension.'" is not allowed to be uploaded ('.$file['name'].')', 'Uploader uploadTo()', TL_ERROR);
 					$this->blnHasError = true;
 				}
 				else
@@ -147,7 +157,7 @@ class FileUpload extends \Backend
 					// Set CHMOD and resize if neccessary
 					if ($this->Files->move_uploaded_file($file['tmp_name'], $strNewFile))
 					{
-						$this->Files->chmod($strNewFile, 0644);
+						$this->Files->chmod($strNewFile, $GLOBALS['TL_CONFIG']['defaultFileChmod']);
 						$blnResized = $this->resizeUploadedImage($strNewFile, $file);
 
 						// Notify the user
@@ -178,7 +188,7 @@ class FileUpload extends \Backend
 		for ($i=0; $i<$GLOBALS['TL_CONFIG']['uploadFields']; $i++)
 		{
 			$fields .= '
-  <input type="file" name="files[]" class="tl_upload_field" onfocus="Backend.getScrollOffset()"><br>';
+  <input type="file" name="' . $this->strName . '[]" class="tl_upload_field" onfocus="Backend.getScrollOffset()"><br>';
 		}
 
 		return '
@@ -200,27 +210,26 @@ class FileUpload extends \Backend
 
 	/**
 	 * Get the files from the global $_FILES array
-	 * @param string
 	 * @return array
 	 */
-	protected function getFilesFromGlobal($strKey)
+	protected function getFilesFromGlobal()
 	{
 		$arrFiles = array();
 
-		for ($i=0; $i<count($_FILES[$strKey]['name']); $i++)
+		for ($i=0; $i<count($_FILES[$this->strName]['name']); $i++)
 		{
-			if ($_FILES[$strKey]['name'][$i] == '')
+			if ($_FILES[$this->strName]['name'][$i] == '')
 			{
 				continue;
 			}
 
 			$arrFiles[] = array
 			(
-				'name'     => $_FILES[$strKey]['name'][$i],
-				'type'     => $_FILES[$strKey]['type'][$i],
-				'tmp_name' => $_FILES[$strKey]['tmp_name'][$i],
-				'error'    => $_FILES[$strKey]['error'][$i],
-				'size'     => $_FILES[$strKey]['size'][$i],
+				'name'     => $_FILES[$this->strName]['name'][$i],
+				'type'     => $_FILES[$this->strName]['type'][$i],
+				'tmp_name' => $_FILES[$this->strName]['tmp_name'][$i],
+				'error'    => $_FILES[$this->strName]['error'][$i],
+				'size'     => $_FILES[$this->strName]['size'][$i],
 			);
 		}
 

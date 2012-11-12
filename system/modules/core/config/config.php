@@ -6,7 +6,7 @@
  * Copyright (C) 2005-2012 Leo Feyer
  * 
  * @package Core
- * @link    http://www.contao.org
+ * @link    http://contao.org
  * @license http://www.gnu.org/licenses/lgpl-3.0.html LGPL
  */
 
@@ -205,6 +205,7 @@ $GLOBALS['BE_FFL'] = array
 	'pageSelector'   => 'PageSelector',
 	'fileTree'       => 'FileTree',
 	'fileSelector'   => 'FileSelector',
+	'fileUpload'     => 'Upload',
 	'tableWizard'    => 'TableWizard',
 	'listWizard'     => 'ListWizard',
 	'optionWizard'   => 'OptionWizard',
@@ -349,8 +350,7 @@ $GLOBALS['TL_CRON'] = array
 (
 	'monthly' => array
 	(
-		array('Automator', 'purgeImageCache'),
-		array('Automator', 'purgeTempFolder'),
+		array('Automator', 'purgeImageCache')
 	),
 	'weekly' => array
 	(
@@ -360,6 +360,7 @@ $GLOBALS['TL_CRON'] = array
 	'daily' => array
 	(
 		array('Automator', 'rotateLogs'),
+		array('Automator', 'purgeTempFolder'),
 		array('Automator', 'checkForUpdates')
 	),
 	'hourly' => array(),
@@ -393,3 +394,4 @@ $GLOBALS['TL_AUTO_ITEM'] = array('items', 'events');
  */
 $GLOBALS['TL_MIME'] = array();
 $GLOBALS['TL_PERMISSIONS'] = array();
+$GLOBALS['TL_MODELS'] = array();

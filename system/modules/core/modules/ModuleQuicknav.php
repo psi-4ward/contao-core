@@ -6,7 +6,7 @@
  * Copyright (C) 2005-2012 Leo Feyer
  * 
  * @package Core
- * @link    http://www.contao.org
+ * @link    http://contao.org
  * @license http://www.gnu.org/licenses/lgpl-3.0.html LGPL
  */
 
@@ -22,7 +22,7 @@ namespace Contao;
  *
  * Front end module "quick navigation".
  * @copyright  Leo Feyer 2005-2012
- * @author     Leo Feyer <http://www.contao.org>
+ * @author     Leo Feyer <http://contao.org>
  * @package    Core
  */
 class ModuleQuicknav extends \Module
@@ -56,12 +56,7 @@ class ModuleQuicknav extends \Module
 
 		if (\Input::post('FORM_SUBMIT') == 'tl_quicknav')
 		{
-			if (strlen(\Input::post('target', true)))
-			{
-				$this->redirect(\Input::post('target', true));
-			}
-
-			$this->reload();
+			$this->redirect(\Input::post('target', true));
 		}
 
 		return parent::generate();
@@ -125,11 +120,7 @@ class ModuleQuicknav extends \Module
 			// Do not show protected pages unless a back end or front end user is logged in
 			if (!$objSubpages->protected || (!is_array($_groups) && FE_USER_LOGGED_IN) || BE_USER_LOGGED_IN || (is_array($_groups) && array_intersect($_groups, $groups)) || $this->showProtected)
 			{
-				// Skip the current page (see #3581)
-				if ($objSubpages->id == $objPage->id)
-				{
-					continue;
-				}
+				// Do not skip the current page here! (see #4523)
 
 				// Check hidden pages
 				if (!$objSubpages->hide || $this->showHidden)
@@ -146,7 +137,7 @@ class ModuleQuicknav extends \Module
 					);
 
 					// Subpages
-					if (!$this->showLevel || $this->showLevel >= $level || (!$this->hardLimit && ($objPage->id == $objSubpages->id || in_array($objPage->id, $this->getChildRecords($objSubpages->id, 'tl_page')))))
+					if (!$this->showLevel || $this->showLevel >= $level || (!$this->hardLimit && ($objPage->id == $objSubpages->id || in_array($objPage->id, $this->Database->getChildRecords($objSubpages->id, 'tl_page')))))
 					{
 						$subpages = $this->getQuicknavPages($objSubpages->id, $level);
 

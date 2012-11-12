@@ -6,7 +6,7 @@
  * Copyright (C) 2005-2012 Leo Feyer
  * 
  * @package Devtools
- * @link    http://www.contao.org
+ * @link    http://contao.org
  * @license http://www.gnu.org/licenses/lgpl-3.0.html LGPL
  */
 
@@ -16,21 +16,21 @@
  */
 $GLOBALS['BE_MOD']['devtools'] = array
 (
+	'autoload' => array
+	(
+		'callback'   => 'ModuleAutoload',
+		'icon'       => 'system/modules/devtools/assets/autoload.gif'
+	),
 	'extension' => array
 	(
 		'tables'     => array('tl_extension'),
 		'create'     => array('ModuleExtension', 'generate'),
-		'icon'       => 'system/modules/devtools/html/extension.gif'
+		'icon'       => 'system/modules/devtools/assets/extension.gif'
 	),
 	'labels' => array
 	(
 		'callback'   => 'ModuleLabels',
-		'icon'       => 'system/modules/devtools/html/labels.gif',
-		'stylesheet' => 'system/modules/devtools/html/labels.css'
-	),
-	'autoload' => array
-	(
-		'callback'   => 'ModuleAutoload',
-		'icon'       => 'system/modules/devtools/html/autoload.gif'
+		'icon'       => 'system/modules/devtools/assets/labels.gif',
+		'stylesheet' => 'system/modules/devtools/assets/labels.css'
 	)
 );

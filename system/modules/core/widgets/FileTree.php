@@ -6,7 +6,7 @@
  * Copyright (C) 2005-2012 Leo Feyer
  * 
  * @package Core
- * @link    http://www.contao.org
+ * @link    http://contao.org
  * @license http://www.gnu.org/licenses/lgpl-3.0.html LGPL
  */
 
@@ -22,7 +22,7 @@ namespace Contao;
  *
  * Provide methods to handle input field "page tree".
  * @copyright  Leo Feyer 2005-2012
- * @author     Leo Feyer <http://www.contao.org>
+ * @author     Leo Feyer <http://contao.org>
  * @package    Core
  */
 class FileTree extends \Widget
@@ -86,22 +86,21 @@ class FileTree extends \Widget
 		$this->import('Database');
 		parent::__construct($arrAttributes);
 
-		$this->orderSRC = null;
 		$this->strOrderField = $GLOBALS['TL_DCA'][$this->strTable]['fields'][$this->strField]['eval']['orderField'];
 		$this->blnIsMultiple = $GLOBALS['TL_DCA'][$this->strTable]['fields'][$this->strField]['eval']['multiple'];
 
-		// Prepare the orderSRC field
+		// Prepare the order field
 		if ($this->strOrderField != '')
 		{
-			$this->strOrderId = 'orderSRC' . str_replace($this->strField, '', $this->strId);
-			$this->strOrderName = 'orderSRC' . str_replace($this->strField, '', $this->strName);
+			$this->strOrderId = $this->strOrderField . str_replace($this->strField, '', $this->strId);
+			$this->strOrderName = $this->strOrderField . str_replace($this->strField, '', $this->strName);
 
-			// Retrieve the orderSRC value
+			// Retrieve the order value
 			$objRow = $this->Database->prepare("SELECT {$this->strOrderField} FROM {$this->strTable} WHERE id=?")
 						   ->limit(1)
 						   ->execute($this->activeRecord->id);
 
-			$this->orderSRC = $objRow->orderSRC;
+			$this->{$this->strOrderField} = $objRow->{$this->strOrderField};
 		}
 
 		$this->blnIsGallery = ($this->activeRecord->type == 'gallery');
@@ -116,7 +115,7 @@ class FileTree extends \Widget
 	 */
 	protected function validator($varInput)
 	{
-		// Store the orderSRC value
+		// Store the order value
 		if ($this->strOrderField != '')
 		{
 			$this->Database->prepare("UPDATE {$this->strTable} SET {$this->strOrderField}=? WHERE id=?")
@@ -164,12 +163,12 @@ class FileTree extends \Widget
 				{
 					if ($objFiles->type == 'folder')
 					{
-						$arrValues[$objFiles->id] = $this->generateImage('folderC.gif') . ' ' . $objFiles->path;
+						$arrValues[$objFiles->id] = \Image::getHtml('folderC.gif') . ' ' . $objFiles->path;
 					}
 					else
 					{
 						$objFile = new \File($objFiles->path);
-						$arrValues[$objFiles->id] = $this->generateImage($objFile->icon) . ' ' . $objFiles->path;
+						$arrValues[$objFiles->id] = \Image::getHtml($objFile->icon) . ' ' . $objFiles->path;
 					}
 				}
 
@@ -194,13 +193,14 @@ class FileTree extends \Widget
 							}
 
 							$objFile = new \File($objSubfiles->path);
+							$strInfo = $objSubfiles->path . ' <span class="tl_gray">(' . $this->getReadableSize($objFile->size) . ($objFile->isGdImage ? ', ' . $objFile->width . 'x' . $objFile->height . ' px' : '') . ')</span>';
 
 							if ($this->blnIsGallery)
 							{
 								// Only show images
 								if ($objFile->isGdImage)
 								{
-									$arrValues[$objSubfiles->id] = $this->generateImage(\Image::get($objSubfiles->path, 50, 50, 'center_center'), '', 'class="gimage"');
+									$arrValues[$objSubfiles->id] = \Image::getHtml(\Image::get($objSubfiles->path, 80, 60, 'center_center'), '', 'class="gimage" title="' . specialchars($strInfo) . '"');
 								}
 							}
 							else
@@ -208,7 +208,7 @@ class FileTree extends \Widget
 								// Only show allowed download types
 								if (in_array($objFile->extension, $allowedDownload) && !preg_match('/^meta(_[a-z]{2})?\.txt$/', $objFile->basename))
 								{
-									$arrValues[$objSubfiles->id] = $this->generateImage($objFile->icon) . ' ' . $objSubfiles->path;
+									$arrValues[$objSubfiles->id] = \Image::getHtml($objFile->icon) . ' ' . $strInfo;
 								}
 							}
 						}
@@ -222,7 +222,7 @@ class FileTree extends \Widget
 							// Only show images
 							if ($objFile->isGdImage)
 							{
-								$arrValues[$objFiles->id] = $this->generateImage(\Image::get($objFiles->path, 50, 50, 'center_center'), '', 'class="gimage"');
+								$arrValues[$objFiles->id] = \Image::getHtml(\Image::get($objFiles->path, 80, 60, 'center_center'), '', 'class="gimage"');
 							}
 						}
 						else
@@ -230,7 +230,7 @@ class FileTree extends \Widget
 							// Only show allowed download types
 							if (in_array($objFile->extension, $allowedDownload) && !preg_match('/^meta(_[a-z]{2})?\.txt$/', $objFile->basename))
 							{
-								$arrValues[$objFiles->id] = $this->generateImage($objFile->icon) . ' ' . $objFiles->path;
+								$arrValues[$objFiles->id] = \Image::getHtml($objFile->icon) . ' ' . $objFiles->path;
 							}
 						}
 					}
@@ -238,10 +238,10 @@ class FileTree extends \Widget
 			}
 
 			// Apply a custom sort order
-			if ($this->strOrderField != '' && $this->orderSRC != '')
+			if ($this->strOrderField != '' && $this->{$this->strOrderField} != '')
 			{
 				$arrNew = array();
-				$arrOrder = array_map('intval', explode(',', $this->orderSRC));
+				$arrOrder = array_map('intval', explode(',', $this->{$this->strOrderField}));
 
 				foreach ($arrOrder as $i)
 				{
@@ -265,9 +265,13 @@ class FileTree extends \Widget
 			}
 		}
 
+		// Load the fonts for the drag hint (see #4838)
+		$GLOBALS['TL_CONFIG']['loadGoogleFonts'] = true;
+
 		$return = '<input type="hidden" name="'.$this->strName.'" id="ctrl_'.$this->strId.'" value="'.$strValues.'">' . (($this->strOrderField != '') ? '
-  <input type="hidden" name="'.$this->strOrderName.'" id="ctrl_'.$this->strOrderId.'" value="'.$this->orderSRC.'">' : '') . '
-  <div class="selector_container" id="target_'.$this->strId.'">
+  <input type="hidden" name="'.$this->strOrderName.'" id="ctrl_'.$this->strOrderId.'" value="'.$this->{$this->strOrderField}.'">' : '') . '
+  <div class="selector_container" id="target_'.$this->strId.'">' . (($this->strOrderField != '' && count($arrValues)) ? '
+    <p id="hint_'.$this->strId.'" class="sort_hint">' . $GLOBALS['TL_LANG']['MSC']['dragItemsHint'] . '</p>' : '') . '
     <ul id="sort_'.$this->strId.'" class="'.trim((($this->strOrderField != '') ? 'sortable ' : '').($this->blnIsGallery ? 'sgallery' : '')).'">';
 
 		foreach ($arrValues as $k=>$v)
@@ -276,8 +280,8 @@ class FileTree extends \Widget
 		}
 
 		$return .= '</ul>
-    <p><a href="contao/file.php?do='.\Input::get('do').'&amp;table='.$this->strTable.'&amp;field='.$this->strField.'&amp;id='.\Input::get('id').'&amp;value='.$strValues.'" class="tl_submit" onclick="Backend.getScrollOffset();Backend.openModalSelector({\'width\':765,\'title\':\''.$GLOBALS['TL_LANG']['MOD']['files'][0].'\',\'url\':this.href,\'id\':\''.$this->strId.'\'});return false">'.$GLOBALS['TL_LANG']['MSC']['changeSelection'].'</a></p>' . (($this->strOrderField != '') ? '
-    <script>Backend.makeMultiSrcSortable("sort_'.$this->strId.'", "ctrl_'.$this->strOrderId.'");</script>' : '') . '
+    <p><a href="contao/file.php?do='.\Input::get('do').'&amp;table='.$this->strTable.'&amp;field='.$this->strField.'&amp;act=show&amp;id='.\Input::get('id').'&amp;value='.$strValues.'&amp;rt='.REQUEST_TOKEN.'" class="tl_submit" onclick="Backend.getScrollOffset();Backend.openModalSelector({\'width\':765,\'title\':\''.specialchars(str_replace("'", "\\'", $GLOBALS['TL_LANG']['MOD']['files'][0])).'\',\'url\':this.href,\'id\':\''.$this->strId.'\'});return false">'.$GLOBALS['TL_LANG']['MSC']['changeSelection'].'</a></p>' . (($this->strOrderField != '') ? '
+    <script>Backend.makeMultiSrcSortable("sort_'.$this->strId.'", "ctrl_'.$this->strOrderId.'");window.addEvent("sm_hide",function(){$("hint_'.$this->strId.'").destroy();$("sort_'.$this->strId.'").removeClass("sortable")})</script>' : '') . '
   </div>';
 
 		return $return;

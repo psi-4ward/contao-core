@@ -6,7 +6,7 @@
  * Copyright (C) 2005-2012 Leo Feyer
  * 
  * @package Core
- * @link    http://www.contao.org
+ * @link    http://contao.org
  * @license http://www.gnu.org/licenses/lgpl-3.0.html LGPL
  */
 
@@ -39,7 +39,7 @@ class FormFieldModel extends \Model
 	 * 
 	 * @param integer $intPid The form ID
 	 * 
-	 * @return \Model_Collection|null A collection of models or null if there are no form fields
+	 * @return \Model\Collection|null A collection of models or null if there are no form fields
 	 */
 	public static function findPublishedByPid($intPid)
 	{

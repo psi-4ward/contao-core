@@ -6,7 +6,7 @@
  * Copyright (C) 2005-2012 Leo Feyer
  * 
  * @package Newsletter
- * @link    http://www.contao.org
+ * @link    http://contao.org
  * @license http://www.gnu.org/licenses/lgpl-3.0.html LGPL
  */
 
@@ -95,7 +95,7 @@ $GLOBALS['TL_DCA']['tl_newsletter'] = array
 			(
 				'label'               => &$GLOBALS['TL_LANG']['tl_newsletter']['send'],
 				'href'                => 'key=send',
-				'icon'                => 'system/modules/newsletter/html/icon.gif'
+				'icon'                => 'system/modules/newsletter/assets/icon.gif'
 			)
 		)
 	),
@@ -268,7 +268,7 @@ $GLOBALS['TL_DCA']['tl_newsletter'] = array
  *
  * Provide miscellaneous methods that are used by the data configuration array.
  * @copyright  Leo Feyer 2005-2012
- * @author     Leo Feyer <http://www.contao.org>
+ * @author     Leo Feyer <http://contao.org>
  * @package    Newsletter
  */
 class tl_newsletter extends Backend
@@ -452,7 +452,7 @@ class tl_newsletter extends Backend
 		if (!strlen($varValue))
 		{
 			$autoAlias = true;
-			$varValue = standardize($this->restoreBasicEntities($dc->activeRecord->subject));
+			$varValue = standardize(String::restoreBasicEntities($dc->activeRecord->subject));
 		}
 
 		$objAlias = $this->Database->prepare("SELECT id FROM tl_newsletter WHERE alias=?")

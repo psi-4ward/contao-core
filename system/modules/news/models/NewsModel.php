@@ -6,7 +6,7 @@
  * Copyright (C) 2005-2012 Leo Feyer
  * 
  * @package News
- * @link    http://www.contao.org
+ * @link    http://contao.org
  * @license http://www.gnu.org/licenses/lgpl-3.0.html LGPL
  */
 
@@ -70,7 +70,7 @@ class NewsModel extends \Model
 	 * @param integer $intLimit    An optional limit
 	 * @param integer $intOffset   An optional offset
 	 * 
-	 * @return \Model_Collection|null A collection of models or null if there are no news
+	 * @return \Model\Collection|null A collection of models or null if there are no news
 	 */
 	public static function findPublishedByPids($arrPids, $blnFeatured=null, $intLimit=0, $intOffset=0)
 	{
@@ -91,7 +91,8 @@ class NewsModel extends \Model
 			$arrColumns[] = "$t.featured=''";
 		}
 
-		if (!BE_USER_LOGGED_IN)
+		// Never return unpublished elements in the back end, so they don't end up in the RSS feed
+		if (!BE_USER_LOGGED_IN || TL_MODE == 'BE')
 		{
 			$time = time();
 			$arrColumns[] = "($t.start='' OR $t.start<$time) AND ($t.stop='' OR $t.stop>$time) AND $t.published=1";
@@ -150,7 +151,7 @@ class NewsModel extends \Model
 	 * 
 	 * @param integer $intPid The news archive ID
 	 * 
-	 * @return \Model_Collection|null A collection of models or null if there are no news
+	 * @return \Model\Collection|null A collection of models or null if there are no news
 	 */
 	public static function findPublishedDefaultByPid($intPid)
 	{
@@ -173,7 +174,7 @@ class NewsModel extends \Model
 	 * @param integer $intId    The news archive ID
 	 * @param integer $intLimit An optional limit
 	 * 
-	 * @return \Model_Collection|null A collection of models or null if there are no news
+	 * @return \Model\Collection|null A collection of models or null if there are no news
 	 */
 	public static function findPublishedByPid($intId, $intLimit=0)
 	{
@@ -202,7 +203,7 @@ class NewsModel extends \Model
 	 * @param integer $intLimit  An optional limit
 	 * @param integer $intOffset An optional offset
 	 * 
-	 * @return \Model_Collection|null A collection of models or null if there are no news
+	 * @return \Model\Collection|null A collection of models or null if there are no news
 	 */
 	public static function findPublishedFromToByPids($intFrom, $intTo, $arrPids, $intLimit=0, $intOffset=0)
 	{

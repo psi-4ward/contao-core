@@ -6,7 +6,7 @@
  * Copyright (C) 2005-2012 Leo Feyer
  * 
  * @package News
- * @link    http://www.contao.org
+ * @link    http://contao.org
  * @license http://www.gnu.org/licenses/lgpl-3.0.html LGPL
  */
 
@@ -22,7 +22,7 @@ namespace Contao;
  *
  * Front end module "news reader".
  * @copyright  Leo Feyer 2005-2012
- * @author     Leo Feyer <http://www.contao.org>
+ * @author     Leo Feyer <http://contao.org>
  * @package    News
  */
 class ModuleNewsReader extends \ModuleNews
@@ -113,10 +113,10 @@ class ModuleNewsReader extends \ModuleNews
 		$arrArticle = $this->parseArticle($objArticle);
 		$this->Template->articles = $arrArticle;
 
-		// Overwrite the page title
+		// Overwrite the page title (see #2853 and #4955)
 		if ($objArticle->headline != '')
 		{
-			$objPage->pageTitle = strip_insert_tags($objArticle->headline);
+			$objPage->pageTitle = strip_tags(strip_insert_tags($objArticle->headline));
 		}
 
 		// Overwrite the page description
@@ -134,6 +134,12 @@ class ModuleNewsReader extends \ModuleNews
 
 		$objArchive = $objArticle->getRelated('pid');
 		$this->Template->allowComments = $objArchive->allowComments;
+
+		// Comments are not allowed
+		if (!$objArchive->allowComments)
+		{
+			return;
+		}
 
 		// Adjust the comments headline level
 		$intHl = min(intval(str_replace('h', '', $this->hl)), 5);

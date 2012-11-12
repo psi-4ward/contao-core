@@ -6,7 +6,7 @@
  * Copyright (C) 2005-2012 Leo Feyer
  * 
  * @package Calendar
- * @link    http://www.contao.org
+ * @link    http://contao.org
  * @license http://www.gnu.org/licenses/lgpl-3.0.html LGPL
  */
 
@@ -18,8 +18,8 @@ array_insert($GLOBALS['BE_MOD']['content'], 1, array
 (
 	'calendar' => array
 	(
-		'tables'     => array('tl_calendar', 'tl_calendar_events', 'tl_calendar_feed'),
-		'icon'       => 'system/modules/calendar/html/icon.gif'
+		'tables'     => array('tl_calendar', 'tl_calendar_events', 'tl_calendar_feed', 'tl_content'),
+		'icon'       => 'system/modules/calendar/assets/icon.gif'
 	)
 ));
 

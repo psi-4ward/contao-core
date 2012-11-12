@@ -6,7 +6,7 @@
  * Copyright (C) 2005-2012 Leo Feyer
  * 
  * @package Core
- * @link    http://www.contao.org
+ * @link    http://contao.org
  * @license http://www.gnu.org/licenses/lgpl-3.0.html LGPL
  */
 
@@ -18,22 +18,11 @@ namespace Contao;
 
 
 /**
- * Include SimplePie classes
- */
-require_once TL_ROOT . '/system/library/Simplepie/simplepie.inc';
-
-if (!class_exists('idna_convert', false))
-{
-	require_once TL_ROOT . '/system/library/IDNA/idna_convert.class.php';
-}
-
-
-/**
  * Class ModuleRssReader
  *
  * Front end module "rss reader".
  * @copyright  Leo Feyer 2005-2012
- * @author     Leo Feyer <http://www.contao.org>
+ * @author     Leo Feyer <http://contao.org>
  * @package    Core
  */
 class ModuleRssReader extends \Module

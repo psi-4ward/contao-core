@@ -6,7 +6,7 @@
  * Copyright (C) 2005-2012 Leo Feyer
  * 
  * @package Core
- * @link    http://www.contao.org
+ * @link    http://contao.org
  * @license http://www.gnu.org/licenses/lgpl-3.0.html LGPL
  */
 
@@ -22,7 +22,7 @@ namespace Contao;
  *
  * Front end module "search".
  * @copyright  Leo Feyer 2005-2012
- * @author     Leo Feyer <http://www.contao.org>
+ * @author     Leo Feyer <http://contao.org>
  * @package    Core
  */
 class ModuleSearch extends \Module
@@ -92,7 +92,7 @@ class ModuleSearch extends \Module
 		$objFormTemplate->matchAll = specialchars($GLOBALS['TL_LANG']['MSC']['matchAll']);
 		$objFormTemplate->matchAny = specialchars($GLOBALS['TL_LANG']['MSC']['matchAny']);
 		$objFormTemplate->id = ($GLOBALS['TL_CONFIG']['disableAlias'] && \Input::get('id')) ? \Input::get('id') : false;
-		$objFormTemplate->action = $this->getIndexFreeRequest();
+		$objFormTemplate->action = \Environment::get('indexFreeRequest');
 
 		// Redirect page
 		if ($this->jumpTo && ($objTarget = $this->objModel->getRelated('jumpTo')) !== null)
@@ -111,7 +111,7 @@ class ModuleSearch extends \Module
 			if ($this->rootPage > 0)
 			{
 				$intRootId = $this->rootPage;
-				$arrPages = $this->getChildRecords($this->rootPage, 'tl_page');
+				$arrPages = $this->Database->getChildRecords($this->rootPage, 'tl_page');
 				array_unshift($arrPages, $this->rootPage);
 			}
 			// Website root
@@ -119,7 +119,7 @@ class ModuleSearch extends \Module
 			{
 				global $objPage;
 				$intRootId = $objPage->rootId;
-				$arrPages = $this->getChildRecords($objPage->rootId, 'tl_page');
+				$arrPages = $this->Database->getChildRecords($objPage->rootId, 'tl_page');
 			}
 
 			// Return if there are no pages

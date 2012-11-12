@@ -6,7 +6,7 @@
  * Copyright (C) 2005-2012 Leo Feyer
  * 
  * @package News
- * @link    http://www.contao.org
+ * @link    http://contao.org
  * @license http://www.gnu.org/licenses/lgpl-3.0.html LGPL
  */
 
@@ -22,7 +22,7 @@ namespace Contao;
  *
  * Front end module "news list".
  * @copyright  Leo Feyer 2005-2012
- * @author     Leo Feyer <http://www.contao.org>
+ * @author     Leo Feyer <http://contao.org>
  * @package    News
  */
 class ModuleNewsList extends \ModuleNews
@@ -71,8 +71,7 @@ class ModuleNewsList extends \ModuleNews
 	 */
 	protected function compile()
 	{
-		$skipFirst = intval($this->skipFirst);
-		$offset = 0;
+		$offset = intval($this->skipFirst);
 		$limit = null;
 		$this->Template->articles = array();
 
@@ -105,7 +104,7 @@ class ModuleNewsList extends \ModuleNews
 			return;
 		}
 
-		$total = $intTotal - $skipFirst;
+		$total = $intTotal - $offset;
 
 		// Split the results
 		if ($this->perPage > 0 && (!isset($limit) || $this->numberOfItems > $this->perPage))
@@ -134,7 +133,7 @@ class ModuleNewsList extends \ModuleNews
 
 			// Set limit and offset
 			$limit = $this->perPage;
-			$offset = (max($page, 1) - 1) * $this->perPage;
+			$offset += (max($page, 1) - 1) * $this->perPage;
 
 			// Overall limit
 			if ($offset + $limit > $total)
@@ -154,7 +153,7 @@ class ModuleNewsList extends \ModuleNews
 		}
 		else
 		{
-			$objArticles = \NewsModel::findPublishedByPids($this->news_archives, $blnFeatured);
+			$objArticles = \NewsModel::findPublishedByPids($this->news_archives, $blnFeatured, 0, $offset);
 		}
 
 		// No items found

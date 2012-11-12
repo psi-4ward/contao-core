@@ -6,7 +6,7 @@
  * Copyright (C) 2005-2012 Leo Feyer
  * 
  * @package Newsletter
- * @link    http://www.contao.org
+ * @link    http://contao.org
  * @license http://www.gnu.org/licenses/lgpl-3.0.html LGPL
  */
 
@@ -22,7 +22,7 @@ namespace Contao;
  *
  * Provide methods to handle newsletters.
  * @copyright  Leo Feyer 2005-2012
- * @author     Leo Feyer <http://www.contao.org>
+ * @author     Leo Feyer <http://contao.org>
  * @package    Newsletter
  */
 class Newsletter extends \Backend
@@ -60,7 +60,7 @@ class Newsletter extends \Backend
 		// Add default sender address
 		if ($objNewsletter->sender == '')
 		{
-			list($objNewsletter->senderName, $objNewsletter->sender) = $this->splitFriendlyName($GLOBALS['TL_CONFIG']['adminEmail']);
+			list($objNewsletter->senderName, $objNewsletter->sender) = \String::splitFriendlyEmail($GLOBALS['TL_CONFIG']['adminEmail']);
 		}
 
 		$arrAttachments = array();
@@ -190,7 +190,7 @@ class Newsletter extends \Backend
 
 				\Message::addConfirmation(sprintf($GLOBALS['TL_LANG']['tl_newsletter']['confirm'], $intTotal));
 
-				echo '<script>setTimeout(\'window.location="' . \Environment::get('base') . $referer . '"\', 1000);</script>';
+				echo '<script>setTimeout(\'window.location="' . \Environment::get('base') . $referer . '"\',1000)</script>';
 				echo '<a href="' . \Environment::get('base') . $referer . '">Please click here to proceed if you are not using JavaScript</a>';
 			}
 
@@ -199,7 +199,7 @@ class Newsletter extends \Backend
 			{
 				$url = preg_replace('/&(amp;)?(start|mpc|recipient)=[^&]*/', '', \Environment::get('request')) . '&start=' . ($intStart + $intPages) . '&mpc=' . $intPages;
 
-				echo '<script>setTimeout(\'window.location="' . \Environment::get('base') . $url . '"\', ' . ($intTimeout * 1000) . ');</script>';
+				echo '<script>setTimeout(\'window.location="' . \Environment::get('base') . $url . '"\',' . ($intTimeout * 1000) . ')</script>';
 				echo '<a href="' . \Environment::get('base') . $url . '">Please click here to proceed if you are not using JavaScript</a>';
 			}
 
@@ -294,11 +294,11 @@ class Newsletter extends \Backend
 
 	/**
 	 * Generate the e-mail object and return it
-	 * @param \Database_Result
+	 * @param \Database\Result
 	 * @param array
 	 * @return \Email
 	 */
-	protected function generateEmailObject(\Database_Result $objNewsletter, $arrAttachments)
+	protected function generateEmailObject(\Database\Result $objNewsletter, $arrAttachments)
 	{
 		$objEmail = new \Email();
 
@@ -330,14 +330,14 @@ class Newsletter extends \Backend
 	/**
 	 * Compile the newsletter and send it
 	 * @param \Email
-	 * @param \Database_Result
+	 * @param \Database\Result
 	 * @param array
 	 * @param string
 	 * @param string
 	 * @param string
 	 * @return string
 	 */
-	protected function sendNewsletter(\Email $objEmail, \Database_Result $objNewsletter, $arrRecipient, $text, $html, $css=null)
+	protected function sendNewsletter(\Email $objEmail, \Database\Result $objNewsletter, $arrRecipient, $text, $html, $css=null)
 	{
 		// Prepare the text content
 		$objEmail->text = \String::parseSimpleTokens($text, $arrRecipient);
@@ -398,7 +398,7 @@ class Newsletter extends \Backend
 		$class = $this->User->uploader;
 
 		// See #4086
-		if (!$this->classFileExists($class))
+		if (!class_exists($class))
 		{
 			$class = 'FileUpload';
 		}
@@ -408,7 +408,7 @@ class Newsletter extends \Backend
 		// Import CSS
 		if (\Input::post('FORM_SUBMIT') == 'tl_recipients_import')
 		{
-			$arrUploaded = $objUploader->uploadTo('system/tmp', 'files');
+			$arrUploaded = $objUploader->uploadTo('system/tmp');
 
 			if (empty($arrUploaded))
 			{
@@ -537,11 +537,37 @@ class Newsletter extends \Backend
 
 
 	/**
+	 * Remove the newsletter subscriptions of members who close their account
+	 * @param integer
+	 * @param string
+	 */
+	public function removeSubscriptions($intUser, $strMode)
+	{
+		if (!$intUser)
+		{
+			return;
+		}
+
+		// Delete or deactivate
+		if ($strMode == 'close_delete')
+		{
+			$this->Database->prepare("DELETE FROM tl_newsletter_recipients WHERE email=(SELECT email FROM tl_member WHERE id=?)")
+						   ->execute($intUser);
+		}
+		else
+		{
+			$this->Database->prepare("UPDATE tl_newsletter_recipients SET active='' WHERE email=(SELECT email FROM tl_member WHERE id=?)")
+						   ->execute($intUser);
+		}
+	}
+
+
+	/**
 	 * Synchronize newsletter subscription of new users
 	 * @param object
 	 * @param array
 	 */
-	public function createNewUser($userId, $arrData)
+	public function createNewUser($intUser, $arrData)
 	{
 		$arrNewsletters = deserialize($arrData['newsletter'], true);
 
@@ -837,7 +863,7 @@ class Newsletter extends \Backend
 
 		if ($intRoot > 0)
 		{
-			$arrRoot = $this->getChildRecords($intRoot, 'tl_page');
+			$arrRoot = $this->Database->getChildRecords($intRoot, 'tl_page');
 		}
 
 		$arrProcessed = array();
@@ -866,7 +892,13 @@ class Newsletter extends \Backend
 				if (!isset($arrProcessed[$objNewsletter->jumpTo]))
 				{
 					$domain = \Environment::get('base');
-					$objParent = $this->getPageDetails($objNewsletter->jumpTo);
+					$objParent = \PageModel::findWithDetails($objNewsletter->jumpTo);
+
+					// The target page does not exist
+					if ($objParent === null)
+					{
+						continue;
+					}
 
 					if ($objParent->domain != '')
 					{

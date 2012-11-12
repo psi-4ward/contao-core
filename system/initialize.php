@@ -6,7 +6,7 @@
  * Copyright (C) 2005-2012 Leo Feyer
  * 
  * @package Core
- * @link    http://www.contao.org
+ * @link    http://contao.org
  * @license http://www.gnu.org/licenses/lgpl-3.0.html LGPL
  */
 
@@ -20,7 +20,7 @@ define('TL_START', microtime(true));
 /**
  * Define the root path to the Contao installation
  */
-define('TL_ROOT', dirname(dirname(__FILE__)));
+define('TL_ROOT', dirname(__DIR__));
 
 
 /**
@@ -60,20 +60,25 @@ require TL_ROOT . '/system/helper/interface.php';
 /**
  * Register the class and template loader
  */
-require TL_ROOT . '/system/library/Contao/ClassLoader.php';
+require TL_ROOT . '/system/modules/core/library/Contao/ClassLoader.php';
 class_alias('Contao\\ClassLoader', 'ClassLoader');
 
-require TL_ROOT . '/system/library/Contao/TemplateLoader.php';
+require TL_ROOT . '/system/modules/core/library/Contao/TemplateLoader.php';
 class_alias('Contao\\TemplateLoader', 'TemplateLoader');
 
 ClassLoader::scanAndRegister(); // config/autoload.php
 
 
 /**
- * Register the SwiftMailer autoloader
+ * Register the SwiftMailer and SimplePie autoloaders
  */
-require_once TL_ROOT . '/system/library/Swiftmailer/classes/Swift.php';
-Swift::registerAutoload(TL_ROOT . '/system/library/Swiftmailer/swift_init.php');
+require_once TL_ROOT . '/system/vendor/swiftmailer/classes/Swift.php';
+
+Swift::registerAutoload(function() {
+	require TL_ROOT . '/system/vendor/swiftmailer/swift_init.php';
+});
+
+require_once TL_ROOT . '/system/vendor/simplepie/autoloader.php';
 
 
 /**
@@ -146,7 +151,8 @@ if (USE_MBSTRING && function_exists('mb_regex_encoding'))
  */
 if (Input::post('language'))
 {
-	$GLOBALS['TL_LANGUAGE'] = Input::post('language');
+	$GLOBALS['TL_LANGUAGE'] = str_replace('_', '-', Input::post('language'));
+	$_SESSION['TL_LANGUAGE'] = $GLOBALS['TL_LANGUAGE'];
 }
 elseif (isset($_SESSION['TL_LANGUAGE']))
 {
@@ -156,7 +162,7 @@ else
 {
 	foreach (Environment::get('httpAcceptLanguage') as $v)
 	{
-		if (is_dir(TL_ROOT . '/system/modules/core/languages/' . $v))
+		if (is_dir(TL_ROOT . '/system/modules/core/languages/' . str_replace('-', '_', $v)))
 		{
 			$GLOBALS['TL_LANGUAGE'] = $v;
 			$_SESSION['TL_LANGUAGE'] = $v;

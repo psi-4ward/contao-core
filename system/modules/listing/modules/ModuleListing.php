@@ -6,7 +6,7 @@
  * Copyright (C) 2005-2012 Leo Feyer
  * 
  * @package Listing
- * @link    http://www.contao.org
+ * @link    http://contao.org
  * @license http://www.gnu.org/licenses/lgpl-3.0.html LGPL
  */
 
@@ -22,7 +22,7 @@ namespace Contao;
  *
  * Provide methods to render content element "listing".
  * @copyright  Leo Feyer 2005-2012
- * @author     Leo Feyer <http://www.contao.org>
+ * @author     Leo Feyer <http://contao.org>
  * @package    Listing
  */
 class ModuleListing extends \Module
@@ -151,18 +151,22 @@ class ModuleListing extends \Module
 		$page = \Input::get($id) ?: 1;
 		$per_page = \Input::get('per_page') ?: $this->perPage;
 
-		if ($page < 1 || $page > max(ceil($objTotal->count/$per_page), 1))
+		// Thanks to Hagen Klemp (see #4485)
+		if ($per_page > 0)
 		{
-			global $objPage;
-			$objPage->noSearch = 1;
-			$objPage->cache = 0;
+			if ($page < 1 || $page > max(ceil($objTotal->count/$per_page), 1))
+			{
+				global $objPage;
+				$objPage->noSearch = 1;
+				$objPage->cache = 0;
 
-			$this->Template->thead = array();
-			$this->Template->tbody = array();
+				$this->Template->thead = array();
+				$this->Template->tbody = array();
 
-			// Send a 404 header
-			header('HTTP/1.1 404 Not Found');
-			return;
+				// Send a 404 header
+				header('HTTP/1.1 404 Not Found');
+				return;
+			}
 		}
 
 
@@ -310,7 +314,7 @@ class ModuleListing extends \Module
 		/**
 		 * Template variables
 		 */
-		$this->Template->action = $this->getIndexFreeRequest();
+		$this->Template->action = \Environment::get('indexFreeRequest');
 		$this->Template->details = ($this->list_info != '') ? true : false;
 		$this->Template->search_label = specialchars($GLOBALS['TL_LANG']['MSC']['search']);
 		$this->Template->per_page_label = specialchars($GLOBALS['TL_LANG']['MSC']['list_perPage']);

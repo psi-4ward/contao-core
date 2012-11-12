@@ -6,7 +6,7 @@
  * Copyright (C) 2005-2012 Leo Feyer
  * 
  * @package Core
- * @link    http://www.contao.org
+ * @link    http://contao.org
  * @license http://www.gnu.org/licenses/lgpl-3.0.html LGPL
  */
 
@@ -22,7 +22,7 @@ namespace Contao;
  *
  * Front end module "custom navigation".
  * @copyright  Leo Feyer 2005-2012
- * @author     Leo Feyer <http://www.contao.org>
+ * @author     Leo Feyer <http://contao.org>
  * @package    Core
  */
 class ModuleCustomnav extends \Module
@@ -54,9 +54,10 @@ class ModuleCustomnav extends \Module
 			return $objTemplate->parse();
 		}
 
-		$this->pages = deserialize($this->pages);
+		// Always return an array (see #4616)
+		$this->pages = deserialize($this->pages, true);
 
-		if (!is_array($this->pages) || $this->pages[0] == '')
+		if (empty($this->pages) || $this->pages[0] == '')
 		{
 			return '';
 		}
@@ -94,9 +95,18 @@ class ModuleCustomnav extends \Module
 
 		$arrPages = array();
 
+		// Sort the array keys according to the given order
+		if ($this->orderPages != '')
+		{
+			$arrPages = array_flip(trimsplit(',', $this->orderPages));
+		}
+
+		$i = 0;
+
+		// Add the items to the pre-sorted array
 		while ($objPages->next())
 		{
-			$arrPages[] = $objPages->row();
+			$arrPages[$i++] = $objPages->row();
 		}
 
 		// Set default template
@@ -144,7 +154,7 @@ class ModuleCustomnav extends \Module
 					$row = $arrPage;
 
 					$row['isActive'] = true;
-					$row['class'] = $strClass;
+					$row['class'] = trim('active ' . $strClass);
 					$row['title'] = specialchars($arrPage['title'], true);
 					$row['pageTitle'] = specialchars($arrPage['pageTitle'], true);
 					$row['link'] = $arrPage['title'];
@@ -196,7 +206,7 @@ class ModuleCustomnav extends \Module
 
 		$objTemplate->items = $items;
 
-		$this->Template->request = $this->getIndexFreeRequest(true);
+		$this->Template->request = \Environment::get('indexFreeRequest');
 		$this->Template->skipId = 'skipNavigation' . $this->id;
 		$this->Template->skipNavigation = specialchars($GLOBALS['TL_LANG']['MSC']['skipNavigation']);
 		$this->Template->items = !empty($items) ? $objTemplate->parse() : '';

@@ -6,7 +6,7 @@
  * Copyright (C) 2005-2012 Leo Feyer
  * 
  * @package Core
- * @link    http://www.contao.org
+ * @link    http://contao.org
  * @license http://www.gnu.org/licenses/lgpl-3.0.html LGPL
  */
 
@@ -52,7 +52,7 @@ $GLOBALS['TL_DCA']['tl_search_index'] = array
 		),
 		'language' => array
 		(
-			'sql'                     => "varchar(2) NOT NULL default ''"
+			'sql'                     => "varchar(5) NOT NULL default ''"
 		)
 	)
 );

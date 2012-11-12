@@ -6,7 +6,7 @@
  * Copyright (C) 2005-2012 Leo Feyer
  * 
  * @package Core
- * @link    http://www.contao.org
+ * @link    http://contao.org
  * @license http://www.gnu.org/licenses/lgpl-3.0.html LGPL
  */
 
@@ -22,7 +22,7 @@ namespace Contao;
  *
  * Front end module "registration".
  * @copyright  Leo Feyer 2005-2012
- * @author     Leo Feyer <http://www.contao.org>
+ * @author     Leo Feyer <http://contao.org>
  * @package    Core
  */
 class ModuleRegistration extends \Module
@@ -125,7 +125,7 @@ class ModuleRegistration extends \Module
 			$strClass = $GLOBALS['TL_FFL']['captcha'];
 
 			// Fallback to default if the class is not defined
-			if (!$this->classFileExists($strClass))
+			if (!class_exists($strClass))
 			{
 				$strClass = 'FormCaptcha';
 			}
@@ -162,7 +162,7 @@ class ModuleRegistration extends \Module
 			$strClass = $GLOBALS['TL_FFL'][$arrData['inputType']];
 
 			// Continue if the class is not defined
-			if (!$this->classFileExists($strClass))
+			if (!class_exists($strClass))
 			{
 				continue;
 			}
@@ -203,7 +203,7 @@ class ModuleRegistration extends \Module
 				}
 
 				// Make sure that unique fields are unique (check the eval setting first -> #3063)
-				if ($arrData['eval']['unique'] && $varValue != '' && !$this->fieldIsUnique('tl_member', $field, $varValue))
+				if ($arrData['eval']['unique'] && $varValue != '' && !$this->Database->isUniqueValue('tl_member', $field, $varValue))
 				{
 					$objWidget->addError(sprintf($GLOBALS['TL_LANG']['ERR']['unique'], $arrData['label'][0] ?: $field));
 				}
@@ -286,7 +286,7 @@ class ModuleRegistration extends \Module
 		$this->Template->captcha = $arrFields['captcha'];
 		$this->Template->formId = 'tl_registration';
 		$this->Template->slabel = specialchars($GLOBALS['TL_LANG']['MSC']['register']);
-		$this->Template->action = $this->getIndexFreeRequest();
+		$this->Template->action = \Environment::get('indexFreeRequest');
 
 		// HOOK: add memberlist fields
 		if (in_array('memberlist', $this->Config->getActiveModules()))

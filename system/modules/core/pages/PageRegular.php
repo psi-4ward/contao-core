@@ -6,7 +6,7 @@
  * Copyright (C) 2005-2012 Leo Feyer
  * 
  * @package Core
- * @link    http://www.contao.org
+ * @link    http://contao.org
  * @license http://www.gnu.org/licenses/lgpl-3.0.html LGPL
  */
 
@@ -22,7 +22,7 @@ namespace Contao;
  *
  * Provide methods to handle a regular front end page.
  * @copyright  Leo Feyer 2005-2012
- * @author     Leo Feyer <http://www.contao.org>
+ * @author     Leo Feyer <http://contao.org>
  * @package    Core
  */
 class PageRegular extends \Frontend
@@ -66,13 +66,23 @@ class PageRegular extends \Frontend
 
 		if ($objModules !== null || $arrModules[0]['mod'] == 0) // see #4137
 		{
+			$arrMapper = array();
+
+			// Create a mapper array in case a module is included more than once (see #4849)
+			if ($objModules !== null)
+			{
+				while ($objModules->next())
+				{
+					$arrMapper[$objModules->id] = $objModules->current();
+				}
+			}
+
 			foreach ($arrModules as $arrModule)
 			{
-				// Replace the module ID with the result row
-				if ($arrModule['mod'] > 0)
+				// Replace the module ID with the module model
+				if ($arrModule['mod'] > 0 && isset($arrMapper[$arrModule['mod']]))
 				{
-					$objModules->next();
-					$arrModule['mod'] = $objModules;
+					$arrModule['mod'] = $arrMapper[$arrModule['mod']];
 				}
 
 				// Generate the modules
@@ -162,8 +172,33 @@ class PageRegular extends \Frontend
 	protected function getPageLayout($objPage)
 	{
 		$blnMobile = ($objPage->mobileLayout && \Environment::get('agent')->mobile);
-		$intId = $blnMobile ? $objPage->mobileLayout : $objPage->layout;
 
+		// Set the cookie
+		if (isset($_GET['toggle_view']))
+		{
+			if (\Input::get('toggle_view') == 'mobile')
+			{
+				$this->setCookie('TL_VIEW', 'mobile', 0);
+			}
+			else
+			{
+				$this->setCookie('TL_VIEW', 'desktop', 0);
+			}
+
+			$this->redirect($this->getReferer());
+		}
+
+		// Override the autodetected value
+		if (\Input::cookie('TL_VIEW') == 'mobile' && $objPage->mobileLayout)
+		{
+			$blnMobile = true;
+		}
+		elseif (\Input::cookie('TL_VIEW') == 'desktop')
+		{
+			$blnMobile = false;
+		}
+
+		$intId = $blnMobile ? $objPage->mobileLayout : $objPage->layout;
 		$objLayout = \LayoutModel::findByPk($intId);
 
 		// Die if there is no layout
@@ -176,6 +211,7 @@ class PageRegular extends \Frontend
 
 		$objPage->hasJQuery = $objLayout->addJQuery;
 		$objPage->hasMooTools = $objLayout->addMooTools;
+		$objPage->isMobile = $blnMobile;
 
 		return $objLayout;
 	}
@@ -281,6 +317,34 @@ class PageRegular extends \Frontend
 				}
 			}
 
+			// Special adjustments if the layout builder is combined with the responsive grid (see #4824)
+			if (in_array('responsive.css', $arrFramework))
+			{
+				if ($objLayout->cols == '2cll' || $objLayout->cols == '3cl')
+				{
+					$arrSize = deserialize($objLayout->widthLeft);
+					$strFramework .= sprintf('#left{right:%s}', ($arrSize['value'] - 10) . $arrSize['unit']);
+				}
+				if ($objLayout->cols == '2clr' || $objLayout->cols == '3cl')
+				{
+					$arrSize = deserialize($objLayout->widthRight);
+					$strFramework .= sprintf('#container{padding-right:%s}', ($arrSize['value'] + 10) . $arrSize['unit']);
+				}
+
+				if ($objLayout->cols == '2cll')
+				{
+					$strFramework .= '#main .inside{margin-left:30px;margin-right:10px}';
+				}
+				if ($objLayout->cols == '3cl')
+				{
+					$strFramework .= '#main .inside{margin-left:30px;margin-right:20px}';
+				}
+				if ($objLayout->cols == '2clr')
+				{
+					$strFramework .= '#main .inside{margin-left:10px;margin-right:20px}';
+				}
+			}
+
 			// Add the layout specific CSS
 			if ($strFramework != '')
 			{
@@ -308,12 +372,19 @@ class PageRegular extends \Frontend
 				// Local fallback (thanks to DyaGa)
 				if ($objLayout->jSource == 'j_fallback')
 				{
-					$this->Template->mooScripts .= '<script' . ($blnXhtml ? ' type="text/javascript"' : '') . '>window.jQuery || document.write(\'<script src="' . TL_PLUGINS_URL . 'plugins/jQuery/core/' . JQUERY . '/jquery.min.js">\x3C/script>\')</script>' . "\n";
+					if ($blnXhtml)
+					{
+						$this->Template->mooScripts .= '<script type="text/javascript">' . "\n/* <![CDATA[ */\n" . 'window.jQuery || document.write(\'<script src="' . TL_ASSETS_URL . 'assets/jquery/core/' . JQUERY . '/jquery.min.js">\x3C/script>\')' . "\n/* ]]> */\n" . '</script>' . "\n";
+					}
+					else
+					{
+						$this->Template->mooScripts .= '<script>window.jQuery || document.write(\'<script src="' . TL_ASSETS_URL . 'assets/jquery/core/' . JQUERY . '/jquery.min.js">\x3C/script>\')</script>' . "\n";
+					}
 				}
 			}
 			else
 			{
-				$this->Template->mooScripts .= '<script' . ($blnXhtml ? ' type="text/javascript"' : '') . ' src="plugins/jQuery/core/' . JQUERY . '/jquery.min.js"></script>' . "\n";
+				$GLOBALS['TL_JAVASCRIPT'][] = 'assets/jquery/core/' . JQUERY . '/jquery.min.js|static';
 			}
 		}
 
@@ -328,15 +399,22 @@ class PageRegular extends \Frontend
 				// Local fallback (thanks to DyaGa)
 				if ($objLayout->mooSource == 'moo_fallback')
 				{
-					$this->Template->mooScripts .= '<script' . ($blnXhtml ? ' type="text/javascript"' : '') . '>window.MooTools || document.write(\'<script src="' . TL_PLUGINS_URL . 'plugins/mootools/core/' . MOOTOOLS . '/mootools-core.js">\x3C/script>\')</script>' . "\n";
+					if ($blnXhtml)
+					{
+						$this->Template->mooScripts .= '<script type="text/javascript">' . "\n/* <![CDATA[ */\n" . 'window.MooTools || document.write(\'<script src="' . TL_ASSETS_URL . 'assets/mootools/core/' . MOOTOOLS . '/mootools-core.js">\x3C/script>\')' . "\n/* ]]> */\n" . '</script>' . "\n";
+					}
+					else
+					{
+						$this->Template->mooScripts .= '<script>window.MooTools || document.write(\'<script src="' . TL_ASSETS_URL . 'assets/mootools/core/' . MOOTOOLS . '/mootools-core.js">\x3C/script>\')</script>' . "\n";
+					}
 				}
 
-				$this->Template->mooScripts .= '<script' . ($blnXhtml ? ' type="text/javascript"' : '') . ' src="' . TL_PLUGINS_URL . 'plugins/mootools/core/' . MOOTOOLS . '/mootools-more.js"></script>' . "\n";
-				$this->Template->mooScripts .= '<script' . ($blnXhtml ? ' type="text/javascript"' : '') . ' src="' . TL_PLUGINS_URL . 'plugins/mootools/core/' . MOOTOOLS . '/mootools-mobile.js"></script>' . "\n";
+				$GLOBALS['TL_JAVASCRIPT'][] = 'assets/mootools/core/' . MOOTOOLS . '/mootools-more.js|static';
+				$GLOBALS['TL_JAVASCRIPT'][] = 'assets/mootools/core/' . MOOTOOLS . '/mootools-mobile.js|static';
 			}
 			else
 			{
-				$this->Template->mooScripts .= '<script' . ($blnXhtml ? ' type="text/javascript"' : '') . ' src="plugins/mootools/core/' . MOOTOOLS . '/mootools.js"></script>' . "\n";
+				$GLOBALS['TL_JAVASCRIPT'][] = 'assets/mootools/core/' . MOOTOOLS . '/mootools.js|static';
 			}
 		}
 
@@ -357,6 +435,7 @@ class PageRegular extends \Frontend
 		$this->Template->charset = $GLOBALS['TL_CONFIG']['characterSet'];
 		$this->Template->base = \Environment::get('base');
 		$this->Template->disableCron = $GLOBALS['TL_CONFIG']['disableCron'];
+		$this->Template->cronTimeout = $this->getCronTimeout();
 	}
 
 
@@ -382,8 +461,6 @@ class PageRegular extends \Frontend
 			$strStyleSheets .= '<link' . ($blnXhtml ? ' type="text/css"' : '') .' rel="stylesheet" href="' . $protocol . 'fonts.googleapis.com/css?family=' . $objLayout->webfonts . '"' . $strTagEnding . "\n";
 		}
 
-		$objCombiner = new \Combiner();
-
 		// Add the Contao CSS framework style sheets
 		if (is_array($arrFramework))
 		{
@@ -391,33 +468,15 @@ class PageRegular extends \Frontend
 			{
 				if ($strFile != 'tinymce.css')
 				{
-					$objCombiner->add('assets/contao/' . $strFile);
+					$GLOBALS['TL_FRAMEWORK_CSS'][] = 'assets/contao/css/' . $strFile;
 				}
 			}
 		}
 
-		// Skip the TinyMCE style sheet
+		// Add the TinyMCE style sheet
 		if (is_array($arrFramework) && in_array('tinymce.css', $arrFramework) && file_exists(TL_ROOT . '/' . $GLOBALS['TL_CONFIG']['uploadPath'] . '/tinymce.css'))
 		{
-			$objCombiner->add($GLOBALS['TL_CONFIG']['uploadPath'] . '/tinymce.css', filemtime(TL_ROOT .'/'. $GLOBALS['TL_CONFIG']['uploadPath'] . '/tinymce.css'));
-		}
-
-		// Internal style sheets
-		if (is_array($GLOBALS['TL_CSS']) && !empty($GLOBALS['TL_CSS']))
-		{
-			foreach (array_unique($GLOBALS['TL_CSS']) as $stylesheet)
-			{
-				list($stylesheet, $media, $mode) = explode('|', $stylesheet);
-
-				if ($mode == 'static')
-				{
-					$objCombiner->add($stylesheet, filemtime(TL_ROOT . '/' . $stylesheet), $media);
-				}
-				else
-				{
-					$strStyleSheets .= '<link' . ($blnXhtml ? ' type="text/css"' : '') . ' rel="stylesheet" href="' . $this->addStaticUrlTo($stylesheet) . '"' . (($media != '' && $media != 'all') ? ' media="' . $media . '"' : '') . $strTagEnding . "\n";
-				}
-			}
+			$GLOBALS['TL_FRAMEWORK_CSS'][] = $GLOBALS['TL_CONFIG']['uploadPath'] . '/tinymce.css';
 		}
 
 		// User style sheets
@@ -440,11 +499,11 @@ class PageRegular extends \Frontend
 					// Aggregate regular style sheets
 					if (!$objStylesheets->cc && !$objStylesheets->hasFontFace)
 					{
-						$objCombiner->add('assets/css/' . $objStylesheets->name . '.css', max($objStylesheets->tstamp, $objStylesheets->tstamp2), $media);
+						$GLOBALS['TL_USER_CSS'][] = 'assets/css/' . $objStylesheets->name . '.css|' . $media . '|static|' . max($objStylesheets->tstamp, $objStylesheets->tstamp2, $objStylesheets->tstamp3);
 					}
 					else
 					{
-						$strStyleSheet = '<link' . ($blnXhtml ? ' type="text/css"' : '') . ' rel="stylesheet" href="' . TL_SCRIPT_URL . 'assets/css/' . $objStylesheets->name . '.css"' . (($media != '' && $media != 'all') ? ' media="' . $media . '"' : '') . $strTagEnding;
+						$strStyleSheet = '<link' . ($blnXhtml ? ' type="text/css"' : '') . ' rel="stylesheet" href="' . TL_ASSETS_URL . 'assets/css/' . $objStylesheets->name . '.css"' . (($media != '' && $media != 'all') ? ' media="' . $media . '"' : '') . $strTagEnding;
 
 						if ($objStylesheets->cc)
 						{
@@ -462,55 +521,28 @@ class PageRegular extends \Frontend
 		// External style sheets
 		if (is_array($arrExternal) && !empty($arrExternal))
 		{
-			foreach (array_unique($arrExternal) as $stylesheet)
+			// Get the file entries from the database
+			$objFiles = \FilesModel::findMultipleByIds($arrExternal);
+
+			if ($objFiles !== null)
 			{
-				if ($stylesheet == '')
+				while ($objFiles->next())
 				{
-					continue;
-				}
-
-				// Validate the file name
-				if (strpos($stylesheet, '..') !== false || strncmp($stylesheet, $GLOBALS['TL_CONFIG']['uploadPath'] . '/', strlen($GLOBALS['TL_CONFIG']['uploadPath']) + 1) !== 0)
-				{
-					throw new \Exception("Invalid path $stylesheet");
-				}
-
-				list($stylesheet, $media, $mode) = explode('|', $stylesheet);
-
-				// Only .css files are allowed
-				if (substr($stylesheet, -4) != '.css')
-				{
-					throw new \Exception("Invalid file extension $stylesheet");
-				}
-
-				// Check whether the file exists
-				if (!file_exists(TL_ROOT . '/' . $stylesheet))
-				{
-					continue;
-				}
-
-				// Include the file
-				if ($mode == 'static')
-				{
-					$objCombiner->add($stylesheet, filemtime(TL_ROOT . '/' . $stylesheet), $media);
-				}
-				else
-				{
-					$strStyleSheets .= '<link' . ($blnXhtml ? ' type="text/css"' : '') . ' rel="stylesheet" href="' . $this->addStaticUrlTo($stylesheet) . '"' . (($media != '' && $media != 'all') ? ' media="' . $media . '"' : '') . $strTagEnding . "\n";
+					if (file_exists(TL_ROOT . '/' . $objFiles->path))
+					{
+						$GLOBALS['TL_USER_CSS'][] = $objFiles->path . '||static';
+					}
 				}
 			}
 		}
 
-		// Create the aggregated style sheet
-		if ($objCombiner->hasEntries())
-		{
-			$strStyleSheets .= '<link' . ($blnXhtml ? ' type="text/css"' : '') . ' rel="stylesheet" href="' . $objCombiner->getCombinedFile() . '"' . $strTagEnding . "\n";
-		}
+		// Add a placeholder for dynamic style sheets (see #4203)
+		$strStyleSheets .= '[[TL_CSS]]';
 
 		// Add the debug style sheet
 		if ($GLOBALS['TL_CONFIG']['debugMode'])
 		{
-			$strStyleSheets .= '<link rel="stylesheet" href="' . $this->addStaticUrlTo('assets/contao/debug.css') . '">' . "\n";
+			$strStyleSheets .= '<link rel="stylesheet" href="' . $this->addStaticUrlTo('assets/contao/css/debug.css') . '">' . "\n";
 		}
 
 		// Always add conditional style sheets at the end
@@ -549,27 +581,10 @@ class PageRegular extends \Frontend
 			}
 		}
 
-		$strHeadTags = '';
+		// Add a placeholder for dynamic <head> tags (see #4203)
+		$strHeadTags = '[[TL_HEAD]]';
 
-		// Add internal scripts
-		if (is_array($GLOBALS['TL_JAVASCRIPT']) && !empty($GLOBALS['TL_JAVASCRIPT']))
-		{
-			foreach (array_unique($GLOBALS['TL_JAVASCRIPT']) as $javascript)
-			{
-				$strHeadTags .= '<script' . ($blnXhtml ? ' type="text/javascript"' : '') . ' src="' . $this->addStaticUrlTo($javascript) . '"></script>' . "\n";
-			}
-		}
-
-		// Add internal <head> tags
-		if (is_array($GLOBALS['TL_HEAD']) && !empty($GLOBALS['TL_HEAD']))
-		{
-			foreach (array_unique($GLOBALS['TL_HEAD']) as $head)
-			{
-				$strHeadTags .= trim($head) . "\n";
-			}
-		}
-
-		// Add user <head> tags
+		// Add the user <head> tags
 		if (($strHead = trim($objLayout->head)) != false)
 		{
 			$strHeadTags .= $strHead . "\n";
@@ -602,14 +617,8 @@ class PageRegular extends \Frontend
 				}
 			}
 
-			// Add the internal jQuery scripts
-			if (is_array($GLOBALS['TL_JQUERY']) && !empty($GLOBALS['TL_JQUERY']))
-			{
-				foreach (array_unique($GLOBALS['TL_JQUERY']) as $script)
-				{
-					$strScripts .= "\n" . trim($script) . "\n";
-				}
-			}
+			// Add a placeholder for dynamic scripts (see #4203)
+			$strScripts .= '[[TL_JQUERY]]';
 		}
 
 		// MooTools
@@ -626,15 +635,12 @@ class PageRegular extends \Frontend
 				}
 			}
 
-			// Add the internal MooTools scripts
-			if (is_array($GLOBALS['TL_MOOTOOLS']) && !empty($GLOBALS['TL_MOOTOOLS']))
-			{
-				foreach (array_unique($GLOBALS['TL_MOOTOOLS']) as $script)
-				{
-					$strScripts .= "\n" . trim($script) . "\n";
-				}
-			}
+			// Add a placeholder for dynamic scripts (see #4203)
+			$strScripts .= '[[TL_MOOTOOLS]]';
 		}
+
+		// Add a placeholder for dynamic scripts (see #4203)
+		$strScripts .= '[[TL_HIGHLIGHTER]]';
 
 		// Add the custom JavaScript
 		if ($objLayout->script != '')

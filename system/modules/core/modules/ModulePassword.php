@@ -6,7 +6,7 @@
  * Copyright (C) 2005-2012 Leo Feyer
  * 
  * @package Core
- * @link    http://www.contao.org
+ * @link    http://contao.org
  * @license http://www.gnu.org/licenses/lgpl-3.0.html LGPL
  */
 
@@ -22,7 +22,7 @@ namespace Contao;
  *
  * Front end module "lost password".
  * @copyright  Leo Feyer 2005-2012
- * @author     Leo Feyer <http://www.contao.org>
+ * @author     Leo Feyer <http://contao.org>
  * @package    Core
  */
 class ModulePassword extends \Module
@@ -103,13 +103,13 @@ class ModulePassword extends \Module
 		$strFields = '';
 		$doNotSubmit = false;
 
-		// Initialize widgets
+		// Initialize the widgets
 		foreach ($arrFields as $arrField)
 		{
 			$strClass = $GLOBALS['TL_FFL'][$arrField['inputType']];
 
 			// Continue if the class is not defined
-			if (!$this->classFileExists($strClass))
+			if (!class_exists($strClass))
 			{
 				continue;
 			}
@@ -122,7 +122,7 @@ class ModulePassword extends \Module
 			$objWidget->rowClass = 'row_'.$row . (($row == 0) ? ' row_first' : '') . ((($row % 2) == 0) ? ' even' : ' odd');
 			++$row;
 
-			// Validate widget
+			// Validate the widget
 			if (\Input::post('FORM_SUBMIT') == 'tl_lost_password')
 			{
 				$objWidget->validate();
@@ -153,22 +153,19 @@ class ModulePassword extends \Module
 
 			if ($objMember === null)
 			{
-				$this->strTemplate = 'mod_message';
-
-				$this->Template = new \FrontendTemplate($this->strTemplate);
-				$this->Template->type = 'error';
-				$this->Template->message = $GLOBALS['TL_LANG']['MSC']['accountNotFound'];
-
-				return;
+				sleep(2); // Wait 2 seconds while brute forcing :)
+				$this->Template->error = $GLOBALS['TL_LANG']['MSC']['accountNotFound'];
 			}
-
-			$this->sendPasswordLink($objMember);
+			else
+			{
+				$this->sendPasswordLink($objMember);
+			}
 		}
 
 		$this->Template->formId = 'tl_lost_password';
 		$this->Template->username = specialchars($GLOBALS['TL_LANG']['MSC']['username']);
 		$this->Template->email = specialchars($GLOBALS['TL_LANG']['MSC']['emailAddress']);
-		$this->Template->action = $this->getIndexFreeRequest();
+		$this->Template->action = \Environment::get('indexFreeRequest');
 		$this->Template->slabel = specialchars($GLOBALS['TL_LANG']['MSC']['requestPassword']);
 		$this->Template->rowLast = 'row_' . count($arrFields) . ' row_last' . ((($row % 2) == 0) ? ' even' : ' odd');
 		$this->Template->tableless = $this->tableless;
@@ -200,7 +197,7 @@ class ModulePassword extends \Module
 		$strClass = $GLOBALS['TL_FFL']['password'];
 
 		// Fallback to default if the class is not defined
-		if (!$this->classFileExists($strClass))
+		if (!class_exists($strClass))
 		{
 			$strClass = 'FormPassword';
 		}
@@ -259,7 +256,7 @@ class ModulePassword extends \Module
 
 		$this->Template->formId = $strToken;
 		$this->Template->fields = $objWidget->parse();
-		$this->Template->action = $this->getIndexFreeRequest();
+		$this->Template->action = \Environment::get('indexFreeRequest');
 		$this->Template->slabel = specialchars($GLOBALS['TL_LANG']['MSC']['setNewPassword']);
 		$this->Template->tableless = $this->tableless;
 	}

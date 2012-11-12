@@ -6,7 +6,7 @@
  * Copyright (C) 2005-2012 Leo Feyer
  * 
  * @package Core
- * @link    http://www.contao.org
+ * @link    http://contao.org
  * @license http://www.gnu.org/licenses/lgpl-3.0.html LGPL
  */
 
@@ -22,7 +22,7 @@ namespace Contao;
  *
  * Provide methods to handle an error 404 page.
  * @copyright  Leo Feyer 2005-2012
- * @author     Leo Feyer <http://www.contao.org>
+ * @author     Leo Feyer <http://contao.org>
  * @package    Core
  */
 class PageError404 extends \Frontend
@@ -53,9 +53,23 @@ class PageError404 extends \Frontend
 		$objRootPage = $this->getRootPageFromUrl();
 
 		// Forward if the language should be but is not set (see #4028)
-		if ($GLOBALS['TL_CONFIG']['addLanguageToUrl'] && !isset($_GET['language']))
+		if ($GLOBALS['TL_CONFIG']['addLanguageToUrl'])
 		{
-			$this->redirect($objRootPage->language . '/' . \Environment::get('request'), 301);
+			// Get the request string without the index.php fragment
+			if (\Environment::get('request') == 'index.php')
+			{
+				$strRequest = '';
+			}
+			else
+			{
+				$strRequest = str_replace('index.php/', '', \Environment::get('request'));
+			}
+
+			// Only redirect if there is no language fragment (see #4669)
+			if ($strRequest != '' && !preg_match('@^[a-z]{2}(\-[A-Z]{2})?/@', $strRequest))
+			{
+				$this->redirect($objRootPage->language . '/' . \Environment::get('request'), 301);
+			}
 		}
 
 		// Look for an 404 page
@@ -73,7 +87,7 @@ class PageError404 extends \Frontend
 		{
 			global $objPage;
 
-			$objPage = $this->getPageDetails($obj404);
+			$objPage = $obj404->loadDetails();
 			$objHandler = new $GLOBALS['TL_PTY']['regular']();
 
 			header('HTTP/1.1 404 Not Found');

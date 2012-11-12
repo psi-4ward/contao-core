@@ -6,7 +6,7 @@
  * Copyright (C) 2005-2012 Leo Feyer
  * 
  * @package Core
- * @link    http://www.contao.org
+ * @link    http://contao.org
  * @license http://www.gnu.org/licenses/lgpl-3.0.html LGPL
  */
 
@@ -22,7 +22,7 @@ namespace Contao;
  *
  * Provide methods to run automated jobs.
  * @copyright  Leo Feyer 2005-2012
- * @author     Leo Feyer <http://www.contao.org>
+ * @author     Leo Feyer <http://contao.org>
  * @package    Core
  */
 class Automator extends \Backend
@@ -104,14 +104,14 @@ class Automator extends \Backend
 		// Walk through the subfolders
 		foreach (scan(TL_ROOT . '/assets/images') as $dir)
 		{
-			if ($dir != 'index.html')
+			if ($dir != 'index.html' && strncmp($dir, '.', 1) !== 0)
 			{
 				// Purge the folder
 				$objFolder = new \Folder('assets/images/' . $dir);
 				$objFolder->purge();
 
 				// Restore the index.html file
-				$objFile = new \File('assets/contao/index.html');
+				$objFile = new \File('templates/index.html');
 				$objFile->copyTo('assets/images/' . $dir . '/index.html');
 			}
 		}
@@ -137,7 +137,7 @@ class Automator extends \Backend
 			$objFolder->purge();
 
 			// Restore the index.html file
-			$objFile = new \File('assets/contao/index.html');
+			$objFile = new \File('templates/index.html');
 			$objFile->copyTo($dir . '/index.html');
 		}
 
@@ -238,13 +238,62 @@ class Automator extends \Backend
 
 
 	/**
+	 * Remove old XML files from the share directory
+	 * 
+	 * @param boolean $blnReturn If true, only return the finds and don't delete
+	 * 
+	 * @return array An array of old XML files
+	 */
+	public function purgeXmlFiles($blnReturn=false)
+	{
+		$arrFeeds = array();
+
+		// XML sitemaps
+		$objFeeds = $this->Database->execute("SELECT sitemapName FROM tl_page WHERE type='root' AND createSitemap=1 AND sitemapName!=''");
+
+		while ($objFeeds->next())
+		{
+			$arrFeeds[] = $objFeeds->sitemapName;
+		}
+
+		// HOOK: preserve third party feeds
+		if (isset($GLOBALS['TL_HOOKS']['removeOldFeeds']) && is_array($GLOBALS['TL_HOOKS']['removeOldFeeds']))
+		{
+			foreach ($GLOBALS['TL_HOOKS']['removeOldFeeds'] as $callback)
+			{
+				$this->import($callback[0]);
+				$arrFeeds = array_merge($arrFeeds, $this->$callback[0]->$callback[1]());
+			}
+		}
+
+		// Delete the old files
+		if (!$blnReturn)
+		{
+			foreach (scan(TL_ROOT . '/share') as $file)
+			{
+				$objFile = new \File('share/' . $file);
+
+				if ($objFile->extension == 'xml' && !in_array($objFile->filename, $arrFeeds))
+				{
+					$objFile->delete();
+				}
+
+				$objFile->close();
+			}
+		}
+
+		return $arrFeeds;
+	}
+
+
+	/**
 	 * Generate the Google XML sitemaps
 	 * @param integer
 	 */
 	public function generateSitemap($intId=0)
 	{
 		$time = time();
-		$this->removeOldFeeds();
+		$this->purgeXmlFiles();
 
 		// Only root pages should have sitemap names
 		$this->Database->execute("UPDATE tl_page SET createSitemap='', sitemapName='' WHERE type!='root'");

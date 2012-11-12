@@ -6,7 +6,7 @@
  * Copyright (C) 2005-2012 Leo Feyer
  * 
  * @package Core
- * @link    http://www.contao.org
+ * @link    http://contao.org
  * @license http://www.gnu.org/licenses/lgpl-3.0.html LGPL
  */
 
@@ -18,10 +18,15 @@
 if ($GLOBALS['TL_CONFIG']['useCE']):
 
 	// Include the CodeMirror scripts
-	$GLOBALS['TL_CSS'][] = 'plugins/codeMirror/'.CODEMIRROR.'/codemirror.css';
-	$GLOBALS['TL_JAVASCRIPT'][] = 'plugins/codeMirror/'.CODEMIRROR.'/codemirror.js';
+	$GLOBALS['TL_CSS'][] = 'assets/codemirror/'.CODEMIRROR.'/codemirror.css';
+	$GLOBALS['TL_JAVASCRIPT'][] = 'assets/codemirror/'.CODEMIRROR.'/codemirror.js';
 
 	foreach ($this->ceFields as $arrField):
+
+		if ($arrField['type'] == 'sql')
+		{
+			$arrField['type'] = 'mysql';
+		}
 
 		// Validate the syntax
 		switch ($arrField['type'])
@@ -32,7 +37,7 @@ if ($GLOBALS['TL_CONFIG']['useCE']):
 			case 'htmlmixed';
 			case 'javascript';
 			case 'php':
-			case 'sql':
+			case 'mysql':
 			case 'xml':
 				// Supported
 				break;

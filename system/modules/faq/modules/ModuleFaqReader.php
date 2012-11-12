@@ -6,7 +6,7 @@
  * Copyright (C) 2005-2012 Leo Feyer
  * 
  * @package Faq
- * @link    http://www.contao.org
+ * @link    http://contao.org
  * @license http://www.gnu.org/licenses/lgpl-3.0.html LGPL
  */
 
@@ -21,7 +21,7 @@ namespace Contao;
  * Class ModuleFaqReader
  *
  * @copyright  Leo Feyer 2008-2012
- * @author     Leo Feyer <http://www.contao.org>
+ * @author     Leo Feyer <http://contao.org>
  * @package    Faq
  */
 class ModuleFaqReader extends \Module
@@ -107,10 +107,10 @@ class ModuleFaqReader extends \Module
 			return;
 		}
 
-		// Overwrite the page title and description
+		// Overwrite the page title and description (see #2853 and #4955)
 		if ($objFaq->question != '')
 		{
-			$objPage->pageTitle = strip_insert_tags($objFaq->question);
+			$objPage->pageTitle = strip_tags(strip_insert_tags($objFaq->question));
 			$objPage->description = $this->prepareMetaDescription($objFaq->question);
 		}
 
@@ -166,15 +166,13 @@ class ModuleFaqReader extends \Module
 		}
 
 		$objCategory = $objFaq->getRelated('pid');
+		$this->Template->allowComments = $objCategory->allowComments;
 
-		// Check whether comments are allowed
+		// Comments are not allowed
 		if (!$objCategory->allowComments)
 		{
-			$this->Template->allowComments = false;
 			return;
 		}
-
-		$this->Template->allowComments = true;
 
 		// Adjust the comments headline level
 		$intHl = min(intval(str_replace('h', '', $this->hl)), 5);

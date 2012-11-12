@@ -6,7 +6,7 @@
  * Copyright (C) 2005-2012 Leo Feyer
  * 
  * @package Core
- * @link    http://www.contao.org
+ * @link    http://contao.org
  * @license http://www.gnu.org/licenses/lgpl-3.0.html LGPL
  */
 
@@ -22,7 +22,7 @@ namespace Contao;
  *
  * Provide methods to manage front end controllers.
  * @copyright  Leo Feyer 2005-2012
- * @author     Leo Feyer <http://www.contao.org>
+ * @author     Leo Feyer <http://contao.org>
  * @package    Core
  */
 abstract class Frontend extends \Controller
@@ -84,7 +84,7 @@ abstract class Frontend extends \Controller
 		}
 
 		// Remove the URL suffix if not just a language root (e.g. en/) is requested
-		if ($strRequest != '' && (!$GLOBALS['TL_CONFIG']['addLanguageToUrl'] || !preg_match('@^[a-z]{2}/$@', $strRequest)))
+		if ($strRequest != '' && (!$GLOBALS['TL_CONFIG']['addLanguageToUrl'] || !preg_match('@^[a-z]{2}(\-[A-Z]{2})?/$@', $strRequest)))
 		{
 			$intSuffixLength = strlen($GLOBALS['TL_CONFIG']['urlSuffix']);
 
@@ -106,10 +106,17 @@ abstract class Frontend extends \Controller
 			$arrMatches = array();
 
 			// Use the matches instead of substr() (thanks to Mario Müller)
-			if (preg_match('@^([a-z]{2})/(.*)$@', $strRequest, $arrMatches))
+			if (preg_match('@^([a-z]{2}(\-[A-Z]{2})?)/(.*)$@', $strRequest, $arrMatches))
 			{
 				\Input::setGet('language', $arrMatches[1]);
-				$strRequest = $arrMatches[2];
+
+				// Trigger the root page if only the language was given
+				if ($arrMatches[3] == '')
+				{
+					return null;
+				}
+
+				$strRequest = $arrMatches[3];
 			}
 			else
 			{
@@ -126,17 +133,67 @@ abstract class Frontend extends \Controller
 			$arrOptions = array($strAlias);
 
 			// Compile all possible aliases by applying dirname() to the request (e.g. news/archive/item, news/archive, news)
-			while (strpos($strAlias, '/') !== false)
+			while ($strAlias != '/' && strpos($strAlias, '/') !== false)
 			{
 				$strAlias = dirname($strAlias);
 				$arrOptions[] = $strAlias;
 			}
 
-			// Check if there is a page with a matching alias
-			$objPage = \PageModel::findByAliases($arrOptions);
+			// Check if there are pages with a matching alias
+			$objPages = \PageModel::findByAliases($arrOptions);
 
-			if ($objPage !== null)
+			if ($objPages !== null)
 			{
+				$arrPages = array();
+
+				// Order by domain and language
+				while ($objPages->next())
+				{
+					$objPage = $objPages->current()->loadDetails();
+
+					$domain = $objPage->domain ?: '*';
+					$arrPages[$domain][$objPage->rootLanguage][] = $objPage;
+
+					// Also store the fallback language
+					if ($objPage->rootIsFallback)
+					{
+						$arrPages[$domain]['*'][] = $objPage;
+					}
+				}
+
+				$strHost = \Environment::get('host');
+
+				// Look for a root page whose domain name matches the host name
+				if (isset($arrPages[$strHost]))
+				{
+					$arrLangs = $arrPages[$strHost];
+				}
+				else
+				{
+					$arrLangs = $arrPages['*']; // Empty domain
+				}
+
+				$arrAliases = array();
+
+				// Use the first result (see #4872)
+				if (!$GLOBALS['TL_CONFIG']['addLanguageToUrl'])
+				{
+					$arrAliases = current($arrLangs);
+				}
+				// Try to find a page matching the language parameter
+				elseif (($lang = \Input::get('language')) != '' && isset($arrLangs[$lang]))
+				{
+					$arrAliases = $arrLangs[$lang];
+				}
+
+				// Return if there are no matches
+				if (empty($arrAliases))
+				{
+					return false;
+				}
+
+				$objPage = $arrAliases[0];
+
 				// The request consists of the alias only
 				if ($strRequest == $objPage->alias)
 				{
@@ -154,7 +211,14 @@ abstract class Frontend extends \Controller
 		// If folderUrl is deactivated or did not find a matching page
 		if ($arrFragments === null)
 		{
-			$arrFragments = explode('/', $strRequest);
+			if ($strRequest == '/')
+			{
+				return false;
+			}
+			else
+			{
+				$arrFragments = explode('/', $strRequest);
+			}
 		}
 
 		// Add the second fragment as auto_item if the number of fragments is even
@@ -172,12 +236,24 @@ abstract class Frontend extends \Controller
 			}
 		}
 
+		// Return if the alias is empty (see #4702)
+		if ($arrFragments[0] == '')
+		{
+			return false;
+		}
+
 		$arrFragments = array_map('urldecode', $arrFragments);
 
 		// Add the fragments to the $_GET array
 		for ($i=1; $i<count($arrFragments); $i+=2)
 		{
-			// Return false the request contains an auto_item keyword (duplicate content) (see #4012)
+			// Skip key value pairs if the key is empty (see #4702)
+			if ($arrFragments[$i] == '')
+			{
+				continue;
+			}
+
+			// Return false if the request contains an auto_item keyword (duplicate content) (see #4012)
 			if ($GLOBALS['TL_CONFIG']['useAutoItem'] && in_array($arrFragments[$i], $GLOBALS['TL_AUTO_ITEM']))
 			{
 				return false;
@@ -230,7 +306,7 @@ abstract class Frontend extends \Controller
 			if ($objRootPage === null)
 			{
 				header('HTTP/1.1 404 Not Found');
-				static::log('No root page found (host "' . $host . '", language "'. \Input::get('language') .'"', 'Frontend getRootPageFromUrl()', TL_ERROR);
+				\System::log('No root page found (host "' . $host . '", language "'. \Input::get('language') .'"', 'Frontend getRootPageFromUrl()', TL_ERROR);
 				die('No root page found');
 			}
 		}
@@ -247,7 +323,7 @@ abstract class Frontend extends \Controller
 			if ($objRootPage === null)
 			{
 				header('HTTP/1.1 404 Not Found');
-				static::log('No root page found (host "' . \Environment::get('host') . '", languages "'.implode(', ', \Environment::get('httpAcceptLanguage')).'")', 'Frontend getRootPageFromUrl()', TL_ERROR);
+				\System::log('No root page found (host "' . \Environment::get('host') . '", languages "'.implode(', ', \Environment::get('httpAcceptLanguage')).'")', 'Frontend getRootPageFromUrl()', TL_ERROR);
 				die('No root page found');
 			}
 
@@ -360,7 +436,7 @@ abstract class Frontend extends \Controller
 
 		if (is_array($intId))
 		{
-			if ($intId['id'] == $objPage->id)
+			if ($intId['id'] == '' || $intId['id'] == $objPage->id)
 			{
 				$this->reload();
 			}
@@ -515,5 +591,26 @@ abstract class Frontend extends \Controller
 		$strText = \String::substr($strText, 180);
 
 		return trim($strText);
+	}
+
+
+	/**
+	 * Return the cron timeout in seconds
+	 * @return integer
+	 */
+	protected function getCronTimeout()
+	{
+		if (!empty($GLOBALS['TL_CRON']['minutely']))
+		{
+			return 60;
+		}
+		elseif (!empty($GLOBALS['TL_CRON']['hourly']))
+		{
+			return 3660;
+		}
+		else
+		{
+			return 86400; // daily
+		}
 	}
 }

@@ -6,7 +6,7 @@
  * Copyright (C) 2005-2012 Leo Feyer
  * 
  * @package Core
- * @link    http://www.contao.org
+ * @link    http://contao.org
  * @license http://www.gnu.org/licenses/lgpl-3.0.html LGPL
  */
 
@@ -22,7 +22,7 @@ namespace Contao;
  *
  * Provide methods to handle radio button tables.
  * @copyright  Leo Feyer 2005-2012
- * @author     Leo Feyer <http://www.contao.org>
+ * @author     Leo Feyer <http://contao.org>
  * @package    Core
  */
 class RadioTable extends \Widget
@@ -123,7 +123,7 @@ class RadioTable extends \Widget
 
 				if (strlen($value))
 				{
-					$label = $this->generateImage($value.'.gif', $label, 'title="'.specialchars($label).'"');
+					$label = \Image::getHtml($value.'.gif', $label, 'title="'.specialchars($label).'"');
 					$return .= '
       <td><input type="radio" name="'.$this->strName.'" id="'.$this->strField.'_'.$i.'_'.$j.'" class="tl_radio" value="'.specialchars($value).'" onfocus="Backend.getScrollOffset()"'.$this->isChecked($this->arrOptions[$j]).$this->getAttributes().'> <label for="'.$this->strField.'_'.$i.'_'.$j.'">'.$label.'</label></td>';
 				}

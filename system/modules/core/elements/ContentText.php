@@ -6,7 +6,7 @@
  * Copyright (C) 2005-2012 Leo Feyer
  * 
  * @package Core
- * @link    http://www.contao.org
+ * @link    http://contao.org
  * @license http://www.gnu.org/licenses/lgpl-3.0.html LGPL
  */
 
@@ -22,7 +22,7 @@ namespace Contao;
  *
  * Front end content element "text".
  * @copyright  Leo Feyer 2005-2012
- * @author     Leo Feyer <http://www.contao.org>
+ * @author     Leo Feyer <http://contao.org>
  * @package    Core
  */
 class ContentText extends \ContentElement
@@ -50,6 +50,13 @@ class ContentText extends \ContentElement
 		else
 		{
 			$this->text = \String::toHtml5($this->text);
+		}
+
+		// Add the static files URL to images
+		if (TL_FILES_URL != '')
+		{
+			$path = $GLOBALS['TL_CONFIG']['uploadPath'] . '/';
+			$this->text = str_replace(' src="' . $path, ' src="' . TL_FILES_URL . $path, $this->text);
 		}
 
 		$this->Template->text = \String::encodeEmail($this->text);

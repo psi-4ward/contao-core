@@ -6,7 +6,7 @@
  * Copyright (C) 2005-2012 Leo Feyer
  * 
  * @package Core
- * @link    http://www.contao.org
+ * @link    http://contao.org
  * @license http://www.gnu.org/licenses/lgpl-3.0.html LGPL
  */
 
@@ -253,13 +253,14 @@ $GLOBALS['TL_DCA']['tl_layout'] = array
 		(
 			'label'                   => &$GLOBALS['TL_LANG']['tl_layout']['external'],
 			'exclude'                 => true,
-			'inputType'               => 'listWizard',
-			'eval'                    => array('style'=>'width:360px'),
-			'save_callback' => array
-			(
-				array('tl_layout', 'filterExternalPaths')
-			),
+			'inputType'               => 'fileTree',
+			'eval'                    => array('multiple'=>true, 'orderField'=>'orderExt', 'fieldType'=>'checkbox', 'filesOnly'=>true, 'extensions'=>'css'),
 			'sql'                     => "blob NULL"
+		),
+		'orderExt' => array
+		(
+			'label'                   => &$GLOBALS['TL_LANG']['tl_layout']['orderExt'],
+			'sql'                     => "text NULL"
 		),
 		'newsfeeds' => array
 		(
@@ -463,7 +464,7 @@ $GLOBALS['TL_DCA']['tl_layout'] = array
  *
  * Provide miscellaneous methods that are used by the data configuration array.
  * @copyright  Leo Feyer 2005-2012
- * @author     Leo Feyer <http://www.contao.org>
+ * @author     Leo Feyer <http://contao.org>
  * @package    Core
  */
 class tl_layout extends Backend
@@ -536,6 +537,11 @@ class tl_layout extends Backend
 	 */
 	public function getNewsfeeds()
 	{
+		if (!in_array('news', $this->Config->getActiveModules()))
+		{
+			return array();
+		}
+
 		$objFeed = NewsFeedModel::findAll();
 
 		if ($objFeed === null)
@@ -560,6 +566,11 @@ class tl_layout extends Backend
 	 */
 	public function getCalendarfeeds()
 	{
+		if (!in_array('calendar', $this->Config->getActiveModules()))
+		{
+			return array();
+		}
+
 		$objFeed = CalendarFeedModel::findAll();
 
 		if ($objFeed === null)
@@ -662,35 +673,12 @@ class tl_layout extends Backend
 
 
 	/**
-	 * Remove empty and duplicate elements from the external style sheets array
-	 * @param mixed
-	 * @return string
-	 */
-	public function filterExternalPaths($varValue)
-	{
-		if ($varValue == '')
-		{
-			return $varValue;
-		}
-
-		$varValue = deserialize($varValue);
-
-		if (!is_array($varValue))
-		{
-			return '';
-		}
-
-		return array_filter(array_unique($varValue));
-	}
-
-
-	/**
 	 * Add a link to edit the stylesheets of the theme
 	 * @param \DataContainer
 	 * @return string
 	 */
 	public function styleSheetLink(DataContainer $dc)
 	{
-		return ' <a href="contao/main.php?do=themes&table=tl_style_sheet&id=' . $dc->activeRecord->pid . '&amp;rt=' . REQUEST_TOKEN . '" title="' . specialchars($GLOBALS['TL_LANG']['tl_layout']['edit_styles']) . '"><img width="12" height="16" alt="" src="system/themes/' . $this->getTheme() . '/images/edit.gif" style="vertical-align:text-bottom"></a>';
+		return ' <a href="contao/main.php?do=themes&table=tl_style_sheet&id=' . $dc->activeRecord->pid . '&amp;rt=' . REQUEST_TOKEN . '" title="' . specialchars($GLOBALS['TL_LANG']['tl_layout']['edit_styles']) . '"><img width="12" height="16" alt="" src="system/themes/' . Backend::getTheme() . '/images/edit.gif" style="vertical-align:text-bottom"></a>';
 	}
 }

@@ -6,7 +6,7 @@
  * Copyright (C) 2005-2012 Leo Feyer
  * 
  * @package Comments
- * @link    http://www.contao.org
+ * @link    http://contao.org
  * @license http://www.gnu.org/licenses/lgpl-3.0.html LGPL
  */
 
@@ -216,12 +216,21 @@ $GLOBALS['TL_DCA']['tl_comments'] = array
 			'filter'                  => true,
 			'inputType'               => 'checkbox',
 			'eval'                    => array('doNotCopy'=>true),
+			'save_callback' => array
+			(
+				array('tl_comments', 'sendNotifications')
+			),
 			'sql'                     => "char(1) NOT NULL default ''"
 		),
 		'ip' => array
 		(
 			'label'                   => &$GLOBALS['TL_LANG']['tl_comments']['ip'],
 			'sql'                     => "varchar(64) NOT NULL default ''"
+		),
+		'notified' => array
+		(
+			'label'                   => &$GLOBALS['TL_LANG']['tl_comments']['notified'],
+			'sql'                     => "char(1) NOT NULL default ''"
 		)
 	)
 );
@@ -232,7 +241,7 @@ $GLOBALS['TL_DCA']['tl_comments'] = array
  *
  * Provide miscellaneous methods that are used by the data configuration array.
  * @copyright  Leo Feyer 2005-2012
- * @author     Leo Feyer <http://www.contao.org>
+ * @author     Leo Feyer <http://contao.org>
  * @package    Comments
  */
 class tl_comments extends Backend
@@ -342,7 +351,7 @@ class tl_comments extends Backend
 		foreach ($this->User->pagemounts as $root)
 		{
 			$pagemounts[] = $root;
-			$pagemounts = array_merge($pagemounts, $this->getChildRecords($root, 'tl_page'));
+			$pagemounts = array_merge($pagemounts, $this->Database->getChildRecords($root, 'tl_page'));
 		}
 
 		$pagemounts = array_unique($pagemounts);
@@ -435,6 +444,22 @@ class tl_comments extends Backend
 		}
 
 		return Cache::get($strKey);
+	}
+
+
+	/**
+	 * Send out the new comment notifications
+	 * @param mixed
+	 * @return mixed
+	 */
+	public function sendNotifications($varValue)
+	{
+		if ($varValue)
+		{
+			Comments::notifyCommentsSubscribers(CommentsModel::findByPk(Input::get('id')));
+		}
+
+		return $varValue;
 	}
 
 
@@ -541,7 +566,7 @@ class tl_comments extends Backend
 	 */
 	public function editComment($row, $href, $label, $title, $icon, $attributes)
 	{
-		return ($this->User->isAdmin || $this->isAllowedToEditComment($row['parent'], $row['source'])) ? '<a href="'.$this->addToUrl($href.'&amp;id='.$row['id']).'" title="'.specialchars($title).'"'.$attributes.'>'.$this->generateImage($icon, $label).'</a> ' : $this->generateImage(preg_replace('/\.gif$/i', '_.gif', $icon)).' ';
+		return ($this->User->isAdmin || $this->isAllowedToEditComment($row['parent'], $row['source'])) ? '<a href="'.$this->addToUrl($href.'&amp;id='.$row['id']).'" title="'.specialchars($title).'"'.$attributes.'>'.Image::getHtml($icon, $label).'</a> ' : Image::getHtml(preg_replace('/\.gif$/i', '_.gif', $icon)).' ';
 	}
 
 
@@ -557,7 +582,7 @@ class tl_comments extends Backend
 	 */
 	public function deleteComment($row, $href, $label, $title, $icon, $attributes)
 	{
-		return ($this->User->isAdmin || $this->isAllowedToEditComment($row['parent'], $row['source'])) ? '<a href="'.$this->addToUrl($href.'&amp;id='.$row['id']).'" title="'.specialchars($title).'"'.$attributes.'>'.$this->generateImage($icon, $label).'</a> ' : $this->generateImage(preg_replace('/\.gif$/i', '_.gif', $icon)).' ';
+		return ($this->User->isAdmin || $this->isAllowedToEditComment($row['parent'], $row['source'])) ? '<a href="'.$this->addToUrl($href.'&amp;id='.$row['id']).'" title="'.specialchars($title).'"'.$attributes.'>'.Image::getHtml($icon, $label).'</a> ' : Image::getHtml(preg_replace('/\.gif$/i', '_.gif', $icon)).' ';
 	}
 
 
@@ -594,10 +619,10 @@ class tl_comments extends Backend
 
 		if (!$this->User->isAdmin && !$this->isAllowedToEditComment($row['parent'], $row['source']))
 		{
-			return $this->generateImage($icon) . ' ';
+			return Image::getHtml($icon) . ' ';
 		}
 
-		return '<a href="'.$this->addToUrl($href).'" title="'.specialchars($title).'"'.$attributes.'>'.$this->generateImage($icon, $label).'</a> ';
+		return '<a href="'.$this->addToUrl($href).'" title="'.specialchars($title).'"'.$attributes.'>'.Image::getHtml($icon, $label).'</a> ';
 	}
 
 

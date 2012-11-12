@@ -76,6 +76,7 @@
 
 /* Buttons */
 .buttonwrapper, .buttonwrapper * { vertical-align:middle; }
+.buttonwrapper a { padding-left:12px; }
 .mod_repository_submit form { display:inline; }
 
 /* Status colors */
@@ -93,6 +94,10 @@
 	border:1px solid #999;
 	font-size:1px;
 	line-height:1px;
+}
+.mod_repository div.ratebarframe.empty
+{
+	background-color:#eee;
 }
 .mod_repository div.ratebar
 {

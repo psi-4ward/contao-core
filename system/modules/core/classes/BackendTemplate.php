@@ -6,7 +6,7 @@
  * Copyright (C) 2005-2012 Leo Feyer
  * 
  * @package Core
- * @link    http://www.contao.org
+ * @link    http://contao.org
  * @license http://www.gnu.org/licenses/lgpl-3.0.html LGPL
  */
 
@@ -22,7 +22,7 @@ namespace Contao;
  *
  * Provide methods to handle back end templates.
  * @copyright  Leo Feyer 2005-2012
- * @author     Leo Feyer <http://www.contao.org>
+ * @author     Leo Feyer <http://contao.org>
  * @package    Core
  */
 class BackendTemplate extends \Template
@@ -63,7 +63,8 @@ class BackendTemplate extends \Template
 			$this->uploadPath = $GLOBALS['TL_CONFIG']['uploadPath'];
 
 			// Fallback to English if the user language is not supported
-			$this->language = file_exists(TL_ROOT . '/plugins/tinyMCE/langs/' . $GLOBALS['TL_LANGUAGE'] . '.js') ? $GLOBALS['TL_LANGUAGE'] : 'en';
+			$strRteLanguage = substr($GLOBALS['TL_LANGUAGE'], 0, 2);
+			$this->language = file_exists(TL_ROOT . '/assets/tinymce/langs/' . $strRteLanguage . '.js') ? $strRteLanguage : 'en';
 
 			foreach ($GLOBALS['TL_RTE'] as $file=>$fields)
 			{
@@ -98,7 +99,7 @@ class BackendTemplate extends \Template
 			foreach (array_unique($GLOBALS['TL_CSS']) as $stylesheet)
 			{
 				list($stylesheet, $media) = explode('|', $stylesheet);
-				$strStyleSheets .= '<link rel="stylesheet" href="' . $this->addStaticUrlTo($stylesheet) . '" media="' . ($media ?: 'all') . '">' . "\n";
+				$strStyleSheets .= '<link rel="stylesheet" href="' . $this->addStaticUrlTo($stylesheet) . '"' . (($media != '' && $media != 'all') ? ' media="' . $media . '"' : '') . '>' . "\n";
 			}
 
 			$this->stylesheets = $strStyleSheets;
@@ -107,7 +108,7 @@ class BackendTemplate extends \Template
 		// Add the debug style sheet
 		if ($GLOBALS['TL_CONFIG']['debugMode'])
 		{
-			$this->stylesheets .= '<link rel="stylesheet" href="' . $this->addStaticUrlTo('assets/contao/debug.css') . '" media="all">' . "\n";
+			$this->stylesheets .= '<link rel="stylesheet" href="' . $this->addStaticUrlTo('assets/contao/css/debug.css') . '">' . "\n";
 		}
 
 		// JavaScripts
@@ -165,7 +166,7 @@ class BackendTemplate extends \Template
 	{
 		return
 			'var Contao={'
-				. 'theme:"' . $this->getTheme() . '",'
+				. 'theme:"' . \Backend::getTheme() . '",'
 				. 'lang:{'
 					. 'close:"' . $GLOBALS['TL_LANG']['MSC']['close'] . '",'
 					. 'collapse:"' . $GLOBALS['TL_LANG']['MSC']['collapseNode'] . '",'
@@ -173,7 +174,7 @@ class BackendTemplate extends \Template
 					. 'loading:"' . $GLOBALS['TL_LANG']['MSC']['loadingData'] . '",'
 					. 'apply:"' . $GLOBALS['TL_LANG']['MSC']['apply'] . '"'
 				. '},'
-				. 'script_url:"' . TL_SCRIPT_URL . '",'
+				. 'script_url:"' . TL_ASSETS_URL . '",'
 				. 'request_token:"' . REQUEST_TOKEN . '"'
 			. '};';
 	}

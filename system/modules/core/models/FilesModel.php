@@ -6,7 +6,7 @@
  * Copyright (C) 2005-2012 Leo Feyer
  * 
  * @package Core
- * @link    http://www.contao.org
+ * @link    http://contao.org
  * @license http://www.gnu.org/licenses/lgpl-3.0.html LGPL
  */
 
@@ -42,7 +42,7 @@ class FilesModel extends \Model
 	 * 
 	 * @param array $arrIds An array of file IDs
 	 * 
-	 * @return \Model_Collection|null A collection of models or null if there are no files
+	 * @return \Model\Collection|null A collection of models or null if there are no files
 	 */
 	public static function findMultipleByIds($arrIds)
 	{
@@ -61,7 +61,7 @@ class FilesModel extends \Model
 	 * 
 	 * @param string $strPath The base path
 	 * 
-	 * @return \Model_Collection|null A collection of models or null if there are no matching files
+	 * @return \Model\Collection|null A collection of models or null if there are no matching files
 	 */
 	public static function findMultipleByBasepath($strPath)
 	{
@@ -76,7 +76,7 @@ class FilesModel extends \Model
 	 * @param array $arrIds        An array of file IDs
 	 * @param array $arrExtensions An array of file extensions
 	 * 
-	 * @return \Model_Collection|null A collection of models or null of there are no matching files
+	 * @return \Model\Collection|null A collection of models or null of there are no matching files
 	 */
 	public static function findMultipleByIdsAndExtensions($arrIds, $arrExtensions)
 	{

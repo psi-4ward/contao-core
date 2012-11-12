@@ -6,7 +6,7 @@
  * Copyright (C) 2005-2012 Leo Feyer
  * 
  * @package News
- * @link    http://www.contao.org
+ * @link    http://contao.org
  * @license http://www.gnu.org/licenses/lgpl-3.0.html LGPL
  */
 
@@ -39,7 +39,7 @@ class NewsFeedModel extends \Model
 	 * 
 	 * @param integer $intId The news archive ID
 	 * 
-	 * @return \Model_Collection|null A collection of models or null if the news archive is not part of a feed
+	 * @return \Model\Collection|null A collection of models or null if the news archive is not part of a feed
 	 */
 	public static function findByArchive($intId)
 	{
@@ -53,7 +53,7 @@ class NewsFeedModel extends \Model
 	 * 
 	 * @param array $arrIds An array of news feed IDs
 	 * 
-	 * @return \Model_Collection|null A collection of models or null if there are no feeds
+	 * @return \Model\Collection|null A collection of models or null if there are no feeds
 	 */
 	public static function findByIds($arrIds)
 	{

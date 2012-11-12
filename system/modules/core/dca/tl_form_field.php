@@ -6,7 +6,7 @@
  * Copyright (C) 2005-2012 Leo Feyer
  * 
  * @package Core
- * @link    http://www.contao.org
+ * @link    http://contao.org
  * @license http://www.gnu.org/licenses/lgpl-3.0.html LGPL
  */
 
@@ -114,13 +114,13 @@ $GLOBALS['TL_DCA']['tl_form_field'] = array
 		'html'                        => '{type_legend},type;{text_legend},html',
 		'text'                        => '{type_legend},type,name,label;{fconfig_legend},mandatory,rgxp,placeholder;{expert_legend:hide},class,maxlength,accesskey,tabindex,value;{submit_legend},addSubmit',
 		'password'                    => '{type_legend},type,name,label;{fconfig_legend},mandatory,rgxp,placeholder;{expert_legend:hide},class,maxlength,accesskey,tabindex;{submit_legend},addSubmit',
-		'textarea'                    => '{type_legend},type,name,label;{fconfig_legend},mandatory,rgxp,placeholder;{expert_legend:hide},class,maxlength,accesskey,tabindex,size;{submit_legend},addSubmit',
+		'textarea'                    => '{type_legend},type,name,label;{fconfig_legend},mandatory,rgxp,placeholder;{expert_legend:hide},class,maxlength,accesskey,tabindex,value,size;{submit_legend},addSubmit',
 		'select'                      => '{type_legend},type,name,label;{fconfig_legend},mandatory,multiple;{options_legend},options;{expert_legend:hide},class,accesskey,tabindex;{submit_legend},addSubmit',
 		'radio'                       => '{type_legend},type,name,label;{fconfig_legend},mandatory;{options_legend},options;{expert_legend:hide},class;{submit_legend},addSubmit',
 		'checkbox'                    => '{type_legend},type,name,label;{fconfig_legend},mandatory;{options_legend},options;{expert_legend:hide},class;{submit_legend},addSubmit',
 		'upload'                      => '{type_legend},type,name,label;{fconfig_legend},mandatory,extensions,maxlength;{store_legend:hide},storeFile;{expert_legend:hide},class,accesskey,tabindex,fSize;{submit_legend},addSubmit',
 		'hidden'                      => '{type_legend},type,name,value;{fconfig_legend},mandatory,rgxp',
-		'captcha'                     => '{type_legend},type,label;{expert_legend:hide},class,accesskey,tabindex;{submit_legend},addSubmit',
+		'captcha'                     => '{type_legend},type,label;{fconfig_legend},placeholder;{expert_legend:hide},class,accesskey,tabindex;{submit_legend},addSubmit',
 		'submit'                      => '{type_legend},type,slabel;{image_legend:hide},imageSubmit;{expert_legend:hide},class,accesskey,tabindex'
 	),
 
@@ -412,7 +412,7 @@ $GLOBALS['TL_DCA']['tl_form_field'] = array
  *
  * Provide miscellaneous methods that are used by the data configuration array.
  * @copyright  Leo Feyer 2005-2012
- * @author     Leo Feyer <http://www.contao.org>
+ * @author     Leo Feyer <http://contao.org>
  * @package    Core
  */
 class tl_form_field extends Backend
@@ -571,7 +571,7 @@ class tl_form_field extends Backend
 
 		$strClass = $GLOBALS['TL_FFL'][$arrRow['type']];
 
-		if (!$this->classFileExists($strClass))
+		if (!class_exists($strClass))
 		{
 			return '';
 		}
@@ -654,7 +654,7 @@ class tl_form_field extends Backend
 			$icon = 'invisible.gif';
 		}
 
-		return '<a href="'.$this->addToUrl($href).'" title="'.specialchars($title).'"'.$attributes.'>'.$this->generateImage($icon, $label).'</a> ';
+		return '<a href="'.$this->addToUrl($href).'" title="'.specialchars($title).'"'.$attributes.'>'.Image::getHtml($icon, $label).'</a> ';
 	}
 
 

@@ -6,7 +6,7 @@
  * Copyright (C) 2005-2012 Leo Feyer
  * 
  * @package Core
- * @link    http://www.contao.org
+ * @link    http://contao.org
  * @license http://www.gnu.org/licenses/lgpl-3.0.html LGPL
  */
 
@@ -23,7 +23,7 @@ require_once '../system/initialize.php';
  *
  * Handle back end logins and logouts.
  * @copyright  Leo Feyer 2005-2012
- * @author     Leo Feyer <http://www.contao.org>
+ * @author     Leo Feyer <http://contao.org>
  * @package    Core
  */
 class Index extends Backend
@@ -93,17 +93,17 @@ class Index extends Backend
 			$this->Template->noCookies = $GLOBALS['TL_LANG']['MSC']['noCookies'];
 		}
 
-		$this->Template->theme = $this->getTheme();
+		$this->Template->theme = Backend::getTheme();
 		$this->Template->messages = Message::generate();
 		$this->Template->base = Environment::get('base');
 		$this->Template->language = $GLOBALS['TL_LANGUAGE'];
-		$this->Template->languages = $this->getBackendLanguages();
+		$this->Template->languages = System::getLanguages(true);
 		$this->Template->title = specialchars($GLOBALS['TL_LANG']['MSC']['login']);
 		$this->Template->charset = $GLOBALS['TL_CONFIG']['characterSet'];
 		$this->Template->action = ampersand(Environment::get('request'));
 		$this->Template->userLanguage = $GLOBALS['TL_LANG']['tl_user']['language'][0];
 		$this->Template->headline = sprintf($GLOBALS['TL_LANG']['MSC']['loginTo'], $GLOBALS['TL_CONFIG']['websiteTitle']);
-		$this->Template->curLanguage = Input::post('language') ?: $GLOBALS['TL_LANGUAGE'];
+		$this->Template->curLanguage = Input::post('language') ?: str_replace('-', '_', $GLOBALS['TL_LANGUAGE']);
 		$this->Template->curUsername = Input::post('username') ?: '';
 		$this->Template->uClass = ($_POST && !Input::post('username')) ? ' class="login_error"' : '';
 		$this->Template->pClass = ($_POST && !Input::post('password')) ? ' class="login_error"' : '';

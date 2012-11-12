@@ -6,7 +6,7 @@
  * Copyright (C) 2005-2012 Leo Feyer
  * 
  * @package Core
- * @link    http://www.contao.org
+ * @link    http://contao.org
  * @license http://www.gnu.org/licenses/lgpl-3.0.html LGPL
  */
 
@@ -22,7 +22,7 @@ namespace Contao;
  *
  * Parent class for objects that can be modules or content elements.
  * @copyright  Leo Feyer 2005-2012
- * @author     Leo Feyer <http://www.contao.org>
+ * @author     Leo Feyer <http://contao.org>
  * @package    Core
  */
 abstract class Hybrid extends \Frontend
@@ -53,6 +53,12 @@ abstract class Hybrid extends \Frontend
 	protected $objModel;
 
 	/**
+	 * Parent element
+	 * @var Model
+	 */
+	protected $objParent;
+
+	/**
 	 * Current record
 	 * @var array
 	 */
@@ -73,6 +79,16 @@ abstract class Hybrid extends \Frontend
 	{
 		parent::__construct();
 
+		// Store the parent element (see #4556)
+		if ($objElement instanceof \Model)
+		{
+			$this->objParent = $objElement;
+		}
+		elseif ($objElement instanceof \Model\Collection)
+		{
+			$this->objParent = $objElement->current();
+		}
+
 		if ($this->strKey == '' || $this->strTable == '')
 		{
 			return;
@@ -81,7 +97,7 @@ abstract class Hybrid extends \Frontend
 		$strModelClass = $this->getModelClassFromTable($this->strTable);
 
 		// Load the model
-		if ($this->classFileExists($strModelClass))
+		if (class_exists($strModelClass))
 		{
 			$objHybrid = $strModelClass::findByPk($objElement->{$this->strKey});
 
@@ -154,6 +170,16 @@ abstract class Hybrid extends \Frontend
 	public function __isset($strKey)
 	{
 		return isset($this->arrData[$strKey]);
+	}
+
+
+	/**
+	 * Return the parent object
+	 * @return object
+	 */
+	public function getParent()
+	{
+		return $this->objParent;
 	}
 
 

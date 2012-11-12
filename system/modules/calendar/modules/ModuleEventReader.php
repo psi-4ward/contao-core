@@ -6,7 +6,7 @@
  * Copyright (C) 2005-2012 Leo Feyer
  * 
  * @package Calendar
- * @link    http://www.contao.org
+ * @link    http://contao.org
  * @license http://www.gnu.org/licenses/lgpl-3.0.html LGPL
  */
 
@@ -22,7 +22,7 @@ namespace Contao;
  *
  * Front end module "event reader".
  * @copyright  Leo Feyer 2005-2012
- * @author     Leo Feyer <http://www.contao.org>
+ * @author     Leo Feyer <http://contao.org>
  * @package    Calendar
  */
 class ModuleEventReader extends \Events
@@ -110,10 +110,10 @@ class ModuleEventReader extends \Events
 			return;
 		}
 
-		// Overwrite the page title
+		// Overwrite the page title (see #2853 and #4955)
 		if ($objEvent->title != '')
 		{
-			$objPage->pageTitle = strip_insert_tags($objEvent->title);
+			$objPage->pageTitle = strip_tags(strip_insert_tags($objEvent->title));
 		}
 
 		// Overwrite the page description
@@ -188,35 +188,14 @@ class ModuleEventReader extends \Events
 		$objTemplate->recurring = $recurring;
 		$objTemplate->until = $until;
 
-		// Clean the RTE output
-		if ($objPage->outputFormat == 'xhtml')
-		{
-			$objEvent->details = \String::toXhtml($objEvent->details);
-		}
-		else
-		{
-			$objEvent->details = \String::toHtml5($objEvent->details);
-		}
+		$objTemplate->details = '';
+		$objElement = \ContentModel::findPublishedByPidAndTable($objEvent->id, 'tl_calendar_events');
 
-		$objTemplate->details = \String::encodeEmail($objEvent->details);
-		$objTemplate->addImage = false;
-
-		// Add an image
-		if ($objEvent->addImage && $objEvent->singleSRC != '')
+		if ($objElement !== null)
 		{
-			if (!is_numeric($objEvent->singleSRC))
+			while ($objElement->next())
 			{
-				$objTemplate->details = '<p class="error">'.$GLOBALS['TL_LANG']['ERR']['version2format'].'</p>';
-			}
-			else
-			{
-				$objModel = \FilesModel::findByPk($objEvent->singleSRC);
-
-				if ($objModel !== null && is_file(TL_ROOT . '/' . $objModel->path))
-				{
-					$objEvent->singleSRC = $objModel->path;
-					$this->addImageToTemplate($objTemplate, $objEvent->row());
-				}
+				$objTemplate->details .= $this->getContentElement($objElement->id);
 			}
 		}
 
@@ -239,6 +218,12 @@ class ModuleEventReader extends \Events
 
 		$objCalendar = $objEvent->getRelated('pid');
 		$this->Template->allowComments = $objCalendar->allowComments;
+
+		// Comments are not allowed
+		if (!$objCalendar->allowComments)
+		{
+			return;
+		}
 
 		// Adjust the comments headline level
 		$intHl = min(intval(str_replace('h', '', $this->hl)), 5);

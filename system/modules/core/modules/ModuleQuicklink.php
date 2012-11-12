@@ -6,7 +6,7 @@
  * Copyright (C) 2005-2012 Leo Feyer
  * 
  * @package Core
- * @link    http://www.contao.org
+ * @link    http://contao.org
  * @license http://www.gnu.org/licenses/lgpl-3.0.html LGPL
  */
 
@@ -22,7 +22,7 @@ namespace Contao;
  *
  * Front end module "quick link".
  * @copyright  Leo Feyer 2005-2012
- * @author     Leo Feyer <http://www.contao.org>
+ * @author     Leo Feyer <http://contao.org>
  * @package    Core
  */
 class ModuleQuicklink extends \Module
@@ -57,18 +57,13 @@ class ModuleQuicklink extends \Module
 		// Redirect to selected page
 		if (\Input::post('FORM_SUBMIT') == 'tl_quicklink')
 		{
-			if (strlen(\Input::post('target', true)))
-			{
-				$this->redirect(\Input::post('target', true));
-			}
-
-			$this->reload();
+			$this->redirect(\Input::post('target', true));
 		}
 
-		// Get all pages
-		$this->pages = deserialize($this->pages);
+		// Always return an array (see #4616)
+		$this->pages = deserialize($this->pages, true);
 
-		if (!is_array($this->pages) || $this->pages[0] == '')
+		if (empty($this->pages) || $this->pages[0] == '')
 		{
 			return '';
 		}
@@ -93,9 +88,18 @@ class ModuleQuicklink extends \Module
 
 		$arrPages = array();
 
+		// Sort the array keys according to the given order
+		if ($this->orderPages != '')
+		{
+			$arrPages = array_flip(trimsplit(',', $this->orderPages));
+		}
+
+		$i = 0;
+
+		// Add the items to the pre-sorted array
 		while ($objPages->next())
 		{
-			$arrPages[] = $objPages->row();
+			$arrPages[$i++] = $objPages->row();
 		}
 
 		$items = array();

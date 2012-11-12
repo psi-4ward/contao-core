@@ -6,7 +6,7 @@
  * Copyright (C) 2005-2012 Leo Feyer
  * 
  * @package News
- * @link    http://www.contao.org
+ * @link    http://contao.org
  * @license http://www.gnu.org/licenses/lgpl-3.0.html LGPL
  */
 
@@ -22,7 +22,7 @@ namespace Contao;
  *
  * Parent class for news modules.
  * @copyright  Leo Feyer 2005-2012
- * @author     Leo Feyer <http://www.contao.org>
+ * @author     Leo Feyer <http://contao.org>
  * @package    News
  */
 abstract class ModuleNews extends \Module
@@ -96,7 +96,8 @@ abstract class ModuleNews extends \Module
 		$objTemplate->linkHeadline = $this->generateLink($objArticle->headline, $objArticle, $blnAddArchive);
 		$objTemplate->more = $this->generateLink($GLOBALS['TL_LANG']['MSC']['more'], $objArticle, $blnAddArchive, true);
 		$objTemplate->link = $this->generateNewsUrl($objArticle, $blnAddArchive);
-		$objTemplate->archive = $objArticle->archive;
+		$objTemplate->archive = $objArticle->getRelated('pid');
+		$objTemplate->text = '';
 
 		// Clean the RTE output
 		if ($objArticle->teaser != '')
@@ -114,7 +115,7 @@ abstract class ModuleNews extends \Module
 		}
 
 		// Display the "read more" button for external/article links
-		if (($objArticle->source == 'external' || $objArticle->source == 'article') && $objArticle->text == '')
+		if ($objArticle->source != 'default')
 		{
 			$objTemplate->text = true;
 		}
@@ -122,7 +123,6 @@ abstract class ModuleNews extends \Module
 		// Compile the news text
 		else
 		{
-			$objTemplate->text = '';
 			$objElement = \ContentModel::findPublishedByPidAndTable($objArticle->id, 'tl_news');
 
 			if ($objElement !== null)
@@ -295,7 +295,7 @@ abstract class ModuleNews extends \Module
 
 		switch ($objItem->source)
 		{
-			// Link to external page
+			// Link to an external page
 			case 'external':
 				if (substr($objItem->url, 0, 7) == 'mailto:')
 				{
@@ -321,7 +321,7 @@ abstract class ModuleNews extends \Module
 
 				if ($objArticle !== null)
 				{
-					self::$arrUrlCache[$strCacheKey] = ampersand($this->generateFrontendUrl($objArticle->pid, '/articles/' . ((!$GLOBALS['TL_CONFIG']['disableAlias'] && $objArticle->alias != '') ? $objArticle->alias : $objArticle->id)));
+					self::$arrUrlCache[$strCacheKey] = ampersand($this->generateFrontendUrl($objArticle->getRelated('pid')->row(), '/articles/' . ((!$GLOBALS['TL_CONFIG']['disableAlias'] && $objArticle->alias != '') ? $objArticle->alias : $objArticle->id)));
 				}
 				break;
 		}

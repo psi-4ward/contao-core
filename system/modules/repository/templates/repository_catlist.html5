@@ -75,7 +75,7 @@ $state_options = &$GLOBALS['TL_LANG']['tl_repository_state_options'];
 <div class="tl_panel">
 
 <div class="tl_submit_panel tl_subpanel">
-<input type="image" name="filter" id="filter" src="<?php echo TL_FILES_URL; ?>system/themes/<?php echo $this->getTheme(); ?>/images/reload.gif" class="tl_img_submit" title="<?php echo $text['apply']; ?>" alt="<?php echo $text['apply']; ?>">
+<input type="image" name="filter" id="filter" src="<?php echo TL_FILES_URL; ?>system/themes/<?php echo Backend::getTheme(); ?>/images/reload.gif" class="tl_img_submit" title="<?php echo $text['apply']; ?>" alt="<?php echo $text['apply']; ?>">
 </div>
 
 <div class="tl_limit tl_subpanel">
@@ -144,8 +144,8 @@ $state_options = &$GLOBALS['TL_LANG']['tl_repository_state_options'];
   <td><?php echo $ext->license; ?></td>
 </tr>
 <tr class="info">
-  <th><?php echo property_exists($ext, 'votes') ? $text['totrating'] : '&nbsp;'; ?></th>
-  <td class="nowrap"><?php if (property_exists($ext, 'votes')): ?><div class="ratebarframe"><div class="ratebar" style="width:<?php echo number_format($ext->rating*10.0,12,'.',','); ?>%"></div></div> <div class="ratebartext"><?php echo sprintf($text['ratingfmt'], $ext->rating, $ext->votes); ?></div><?php endif; ?></td>
+  <th><?php echo $text['totrating']; ?></th>
+  <td class="nowrap"><div class="ratebarframe<?php echo ($ext->votes < 1) ? ' empty' : ''; ?>"><div class="ratebar" style="width:<?php echo number_format($ext->rating*10.0,12,'.',','); ?>%"></div></div> <div class="ratebartext"><?php echo sprintf($text['ratingfmt'], $ext->rating, $ext->votes); ?></div></td>
   <th><?php echo $text['popularity'][0]; ?></th>
   <td class="nowrap"><?php echo sprintf($text['popularity'][1], (int)$ext->downloads, (int)$ext->installs); ?></td>
 </tr>

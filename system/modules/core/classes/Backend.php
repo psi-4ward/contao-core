@@ -6,7 +6,7 @@
  * Copyright (C) 2005-2012 Leo Feyer
  * 
  * @package Core
- * @link    http://www.contao.org
+ * @link    http://contao.org
  * @license http://www.gnu.org/licenses/lgpl-3.0.html LGPL
  */
 
@@ -22,7 +22,7 @@ namespace Contao;
  *
  * Provide methods to manage back end controllers.
  * @copyright  Leo Feyer 2005-2012
- * @author     Leo Feyer <http://www.contao.org>
+ * @author     Leo Feyer <http://contao.org>
  * @package    Core
  */
 abstract class Backend extends \Controller
@@ -36,6 +36,48 @@ abstract class Backend extends \Controller
 		parent::__construct();
 		$this->import('Database');
 		$this->setStaticUrls();
+	}
+
+
+	/**
+	 * Return the current theme as string
+	 * 
+	 * @return string The name of the theme
+	 */
+	public static function getTheme()
+	{
+		$theme = $GLOBALS['TL_CONFIG']['backendTheme'];
+
+		if ($theme != '' && $theme != 'default' && is_dir(TL_ROOT . '/system/themes/' . $theme))
+		{
+			return $theme;
+		}
+
+		return 'default';
+	}
+
+
+	/**
+	 * Return the back end themes as array
+	 * 
+	 * @return array An array of available back end themes
+	 */
+	public static function getThemes()
+	{
+		$arrReturn = array();
+		$arrThemes = scan(TL_ROOT . '/system/themes');
+
+		foreach ($arrThemes as $strTheme)
+		{
+			if (strncmp($strTheme, '.', 1) === 0 || !is_dir(TL_ROOT . '/system/themes/' . $strTheme))
+			{
+				continue;
+			}
+
+			$arrReturn[$strTheme] = $strTheme;
+		}
+
+		return $arrReturn;
 	}
 
 
@@ -218,7 +260,7 @@ abstract class Backend extends \Controller
 		}
 
 		// Trigger the module callback
-		elseif ($this->classFileExists($arrModule['callback']))
+		elseif (class_exists($arrModule['callback']))
 		{
 			$objCallback = new $arrModule['callback']($dc);
 			$this->Template->main .= $objCallback->generate();
@@ -485,7 +527,7 @@ abstract class Backend extends \Controller
 
 		foreach ($this->eliminateNestedPages($this->User->pagemounts) as $page)
 		{
-			$objPage = $this->getPageDetails($page);
+			$objPage = \PageModel::findWithDetails($page);
 
 			// Root page mounted
 			if ($objPage->type == 'root')
@@ -556,7 +598,7 @@ abstract class Backend extends \Controller
 			}
 			else
 			{
-				$strOptions .= sprintf('<option value="{{link_url::%s}}"%s>%s%s</option>', $objPages->id, (('{{link_url::' . $objPages->id . '}}' == \Input::get('value')) ? ' selected="selected"' : ''), str_repeat(" &nbsp; &nbsp; ", $level), specialchars($objPages->title));
+				$strOptions .= sprintf('<option value="{{link_url::%s}}"%s>%s%s</option>', $objPages->id, (('{{link_url::' . $objPages->id . '}}' == \Input::get('value')) ? ' selected="selected"' : ''), str_repeat(' &nbsp; &nbsp; ', $level), specialchars($objPages->title));
 				$strOptions .= $this->doCreatePageList($objPages->id, $level);
 			}
 		}

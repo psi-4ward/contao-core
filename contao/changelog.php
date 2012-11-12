@@ -6,7 +6,7 @@
  * Copyright (C) 2005-2012 Leo Feyer
  * 
  * @package Core
- * @link    http://www.contao.org
+ * @link    http://contao.org
  * @license http://www.gnu.org/licenses/lgpl-3.0.html LGPL
  */
 
@@ -23,7 +23,7 @@ require_once '../system/initialize.php';
  *
  * Show the changelog to an authenticated user.
  * @copyright  Leo Feyer 2005-2012
- * @author     Leo Feyer <http://www.contao.org>
+ * @author     Leo Feyer <http://contao.org>
  * @package    Core
  */
 class Changelog extends Backend
@@ -60,7 +60,7 @@ class Changelog extends Backend
 				'/#([0-9]+)/',
 				'/(---+\n)(?!\n)/',
 				'/([^\n]+)\n===+\n/',
-				'/([^\n]+)\n---+\n/',
+				'/\n([^\n]+)\n---+\n/',
 				'/\n### ([^\n]+)\n/',
 				'/ _(?!_)/', '/_ /',
 				'/===+\n/'
@@ -68,9 +68,9 @@ class Changelog extends Backend
 			array(
 				'<a href="https://github.com/contao/core/issues/$1" target="_blank">#$1</a>',
 				"$1\n",
-				'<h2>$1</h2>',
+				"<h2>$1</h2>\n\n",
 				"<h3>\$1</h3>\n",
-				"<h4>\$1</h4>\n",
+				"\n<h4>\$1</h4>\n",
 				' <em>', '</em> ',
 				''
 			),
@@ -99,7 +99,7 @@ class Changelog extends Backend
 
 		// Template variables
 		$this->Template->content = $strBuffer;
-		$this->Template->theme = $this->getTheme();
+		$this->Template->theme = Backend::getTheme();
 		$this->Template->base = Environment::get('base');
 		$this->Template->language = $GLOBALS['TL_LANGUAGE'];
 		$this->Template->title = specialchars($GLOBALS['TL_LANG']['MSC']['changelog']);

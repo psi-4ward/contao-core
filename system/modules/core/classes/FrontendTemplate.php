@@ -6,7 +6,7 @@
  * Copyright (C) 2005-2012 Leo Feyer
  * 
  * @package Core
- * @link    http://www.contao.org
+ * @link    http://contao.org
  * @license http://www.gnu.org/licenses/lgpl-3.0.html LGPL
  */
 
@@ -22,7 +22,7 @@ namespace Contao;
  *
  * Provide methods to handle front end templates.
  * @copyright  Leo Feyer 2005-2012
- * @author     Leo Feyer <http://www.contao.org>
+ * @author     Leo Feyer <http://contao.org>
  * @package    Core
  */
 class FrontendTemplate extends \Template
@@ -131,7 +131,7 @@ class FrontendTemplate extends \Template
 		$intCache = null;
 
 		// Cache the page if it is not protected
-		if (empty($_POST) && !BE_USER_LOGGED_IN && !FE_USER_LOGGED_IN && !$_SESSION['DISABLE_CACHE'] && !isset($_SESSION['LOGIN_ERROR']) && ($GLOBALS['TL_CONFIG']['cacheMode'] == 'both' || $GLOBALS['TL_CONFIG']['cacheMode'] == 'server') && intval($objPage->cache) > 0 && !$objPage->protected)
+		if (!isset($_GET['file']) && !isset($_GET['token']) && empty($_POST) && !BE_USER_LOGGED_IN && !FE_USER_LOGGED_IN && !$_SESSION['DISABLE_CACHE'] && !isset($_SESSION['LOGIN_ERROR']) && ($GLOBALS['TL_CONFIG']['cacheMode'] == 'both' || $GLOBALS['TL_CONFIG']['cacheMode'] == 'server') && intval($objPage->cache) > 0 && !$objPage->protected)
 		{
 			// If the request string is empty, use a special cache tag which considers the page language
 			if (\Environment::get('request') == '' || \Environment::get('request') == 'index.php')
@@ -160,7 +160,9 @@ class FrontendTemplate extends \Template
 			}
 
 			// Replace insert tags for caching
-			$strBuffer = $this->replaceInsertTags($strBuffer, true);
+			$strBuffer = $this->replaceInsertTags($strBuffer);
+			$strBuffer = $this->replaceDynamicScriptTags($strBuffer); // see #4203
+
 			$intCache = intval($objPage->cache) + time();
 			$lb = $GLOBALS['TL_CONFIG']['minifyMarkup'] ? '' : "\n";
 			$strMd5CacheKey = md5($strCacheKey);
@@ -182,7 +184,7 @@ class FrontendTemplate extends \Template
 				"<!--\n\n"
 				. "\tThis website is powered by Contao Open Source CMS :: Licensed under GNU/LGPL\n"
 				. "\tCopyright ©2005-" . date('Y') . " by Leo Feyer :: Extensions are copyright of their respective owners\n"
-				. "\tVisit the project website at http://www.contao.org for more information\n\n"
+				. "\tVisit the project website at http://contao.org for more information\n\n"
 				. "//-->$lb$1",
 				$this->minifyHtml($strBuffer), 1
 			), '');
@@ -210,8 +212,9 @@ class FrontendTemplate extends \Template
 		}
 
 		// Replace insert tags and then re-replace the request_token tag in case a form element has been loaded via insert tag
-		$this->strBuffer = $this->replaceInsertTags($strBuffer);
+		$this->strBuffer = $this->replaceInsertTags($strBuffer, false);
 		$this->strBuffer = str_replace(array('{{request_token}}', '[{]', '[}]'), array(REQUEST_TOKEN, '{{', '}}'), $this->strBuffer);
+		$this->strBuffer = $this->replaceDynamicScriptTags($this->strBuffer); // see #4203
 
 		// Index page if searching is allowed and there is no back end user
 		if ($GLOBALS['TL_CONFIG']['enableSearch'] && $objPage->type == 'regular' && !BE_USER_LOGGED_IN && !$objPage->noSearch)

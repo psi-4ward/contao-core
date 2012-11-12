@@ -6,7 +6,7 @@
  * Copyright (C) 2005-2012 Leo Feyer
  * 
  * @package Core
- * @link    http://www.contao.org
+ * @link    http://contao.org
  * @license http://www.gnu.org/licenses/lgpl-3.0.html LGPL
  */
 
@@ -22,7 +22,7 @@ namespace Contao;
  *
  * Provide methods to handle a forward page.
  * @copyright  Leo Feyer 2005-2012
- * @author     Leo Feyer <http://www.contao.org>
+ * @author     Leo Feyer <http://contao.org>
  * @package    Core
  */
 class PageForward extends \Frontend
@@ -37,7 +37,7 @@ class PageForward extends \Frontend
 		// Forward to the jumpTo or first published page
 		if ($objPage->jumpTo)
 		{
-			$objNextPage = \PageModel::findPublishedById($objPage->jumpTo);
+			$objNextPage = $objPage->getRelated('jumpTo');
 		}
 		else
 		{
@@ -50,6 +50,15 @@ class PageForward extends \Frontend
 			header('HTTP/1.1 404 Not Found');
 			$this->log('Forward page ID "' . $objPage->jumpTo . '" does not exist', 'PageForward generate()', TL_ERROR);
 			die('Forward page not found');
+		}
+
+		$strForceLang = null;
+
+		// Check the target page language (see #4706)
+		if ($GLOBALS['TL_CONFIG']['addLanguageToUrl'])
+		{
+			$objNextPage->loadDetails(); // see #3983
+			$strForceLang = $objNextPage->language;
 		}
 
 		$strGet = '';
@@ -73,6 +82,6 @@ class PageForward extends \Frontend
 			}
 		}
 
-		$this->redirect($this->generateFrontendUrl($objNextPage->row(), $strGet), (($objPage->redirect == 'temporary') ? 302 : 301));
+		$this->redirect($this->generateFrontendUrl($objNextPage->row(), $strGet, $strForceLang), (($objPage->redirect == 'temporary') ? 302 : 301));
 	}
 }

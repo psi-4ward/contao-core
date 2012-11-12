@@ -6,7 +6,7 @@
  * Copyright (C) 2005-2012 Leo Feyer
  * 
  * @package Core
- * @link    http://www.contao.org
+ * @link    http://contao.org
  * @license http://www.gnu.org/licenses/lgpl-3.0.html LGPL
  */
 
@@ -86,7 +86,7 @@ class ArticleModel extends \Model
 	 * @param integer $intPid    The page ID
 	 * @param string  $strColumn The column name
 	 * 
-	 * @return \Model_Collection|null A collection of models or null if there are no articles in the given column
+	 * @return \Model\Collection|null A collection of models or null if there are no articles in the given column
 	 */
 	public static function findPublishedByPidAndColumn($intPid, $strColumn)
 	{
@@ -110,7 +110,7 @@ class ArticleModel extends \Model
 	 * @param integer $intPid    The page ID
 	 * @param string  $strColumn The column name
 	 * 
-	 * @return \Model_Collection|null A collection of models or null if there are no articles in the given column
+	 * @return \Model\Collection|null A collection of models or null if there are no articles in the given column
 	 */
 	public static function findPublishedWithTeaserByPidAndColumn($intPid, $strColumn)
 	{

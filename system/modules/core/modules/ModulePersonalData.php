@@ -2,11 +2,11 @@
 
 /**
  * Contao Open Source CMS
- * 
+ *
  * Copyright (C) 2005-2012 Leo Feyer
- * 
+ *
  * @package Core
- * @link    http://www.contao.org
+ * @link    http://contao.org
  * @license http://www.gnu.org/licenses/lgpl-3.0.html LGPL
  */
 
@@ -22,7 +22,7 @@ namespace Contao;
  *
  * Front end module "personal data".
  * @copyright  Leo Feyer 2005-2012
- * @author     Leo Feyer <http://www.contao.org>
+ * @author     Leo Feyer <http://contao.org>
  * @package    Core
  */
 class ModulePersonalData extends \Module
@@ -124,7 +124,7 @@ class ModulePersonalData extends \Module
 			$strClass = $GLOBALS['TL_FFL'][$arrData['inputType']];
 
 			// Continue if the class does not exist
-			if (!$arrData['eval']['feEditable'] || !$this->classFileExists($strClass))
+			if (!$arrData['eval']['feEditable'] || !class_exists($strClass))
 			{
 				continue;
 			}
@@ -134,7 +134,22 @@ class ModulePersonalData extends \Module
 			$arrData['eval']['tableless'] = $this->tableless;
 			$arrData['eval']['required'] = ($this->User->$field == '' && $arrData['eval']['mandatory']) ? true : false;
 
-			$objWidget = new $strClass($this->prepareForWidget($arrData, $field, $this->User->$field));
+			$varValue = $this->User->$field;
+
+			// Call the load_callback
+			if (isset($arrData['load_callback']) && is_array($arrData['load_callback']))
+			{
+				foreach ($arrData['load_callback'] as $callback)
+				{
+					if (is_array($callback))
+					{
+						$this->import($callback[0]);
+						$varValue = $this->$callback[0]->$callback[1]($varValue, $this->User, $this);
+					}
+				}
+			}
+
+			$objWidget = new $strClass($this->prepareForWidget($arrData, $field, $varValue));
 
 			$objWidget->storeValues = true;
 			$objWidget->rowClass = 'row_'.$row . (($row == 0) ? ' row_first' : '') . ((($row % 2) == 0) ? ' even' : ' odd');
@@ -163,7 +178,7 @@ class ModulePersonalData extends \Module
 				}
 
 				// Make sure that unique fields are unique (check the eval setting first -> #3063)
-				if ($arrData['eval']['unique'] && $varValue != '' && !$this->fieldIsUnique('tl_member', $field, $varValue, $this->User->id))
+				if ($arrData['eval']['unique'] && $varValue != '' && !$this->Database->isUniqueValue('tl_member', $field, $varValue, $this->User->id))
 				{
 					$objWidget->addError(sprintf($GLOBALS['TL_LANG']['ERR']['unique'], $arrData['label'][0] ?: $field));
 				}
@@ -247,6 +262,19 @@ class ModulePersonalData extends \Module
 				}
 			}
 
+			// Call the onsubmit_callback
+			if (is_array($GLOBALS['TL_DCA']['tl_member']['config']['onsubmit_callback']))
+			{
+				foreach ($GLOBALS['TL_DCA']['tl_member']['config']['onsubmit_callback'] as $callback)
+				{
+					if (is_array($callback))
+					{
+						$this->import($callback[0]);
+						$this->$callback[0]->$callback[1]($this->User, $this);
+					}
+				}
+			}
+
 			$this->jumpToOrReload($this->objModel->getRelated('jumpTo')->row());
 		}
 
@@ -263,7 +291,7 @@ class ModulePersonalData extends \Module
 
 		$this->Template->formId = 'tl_member_' . $this->id;
 		$this->Template->slabel = specialchars($GLOBALS['TL_LANG']['MSC']['saveData']);
-		$this->Template->action = $this->getIndexFreeRequest();
+		$this->Template->action = \Environment::get('indexFreeRequest');
 		$this->Template->enctype = $hasUpload ? 'multipart/form-data' : 'application/x-www-form-urlencoded';
 		$this->Template->rowLast = 'row_' . $row . ((($row % 2) == 0) ? ' even' : ' odd');
 

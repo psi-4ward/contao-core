@@ -6,7 +6,7 @@
  * Copyright (C) 2005-2012 Leo Feyer
  * 
  * @package Core
- * @link    http://www.contao.org
+ * @link    http://contao.org
  * @license http://www.gnu.org/licenses/lgpl-3.0.html LGPL
  */
 
@@ -22,7 +22,7 @@ namespace Contao;
  *
  * Provide methods to manage back end users.
  * @copyright  Leo Feyer 2005-2012
- * @author     Leo Feyer <http://www.contao.org>
+ * @author     Leo Feyer <http://contao.org>
  * @package    Core
  */
 class BackendUser extends \User
@@ -51,6 +51,12 @@ class BackendUser extends \User
 	 * @var array
 	 */
 	protected $alexf = array();
+
+	/**
+	 * File mount IDs
+	 * @var array
+	 */
+	protected $arrFilemountIds;
 
 
 	/**
@@ -122,6 +128,10 @@ class BackendUser extends \User
 				return is_array($this->arrData['filemounts']) ? $this->arrData['filemounts'] : (($this->arrData['filemounts'] != '') ? array($this->arrData['filemounts']) : false);
 				break;
 
+			case 'filemountIds':
+				return $this->arrFilemountIds;
+				break;
+
 			case 'fop':
 				return is_array($this->arrData['fop']) ? $this->arrData['fop'] : (($this->arrData['fop'] != '') ? array($this->arrData['fop']) : false);
 				break;
@@ -157,7 +167,7 @@ class BackendUser extends \User
 		// Force JavaScript redirect on Ajax requests (IE requires an absolute link)
 		if (\Environment::get('isAjaxRequest'))
 		{
-			echo json_encode(array('content' => '<script>location.replace("' . \Environment::get('base') . $strRedirect . '")</script>'));
+			echo '<script>location.replace("' . \Environment::get('base') . $strRedirect . '")</script>';
 			exit;
 		}
 
@@ -288,8 +298,8 @@ class BackendUser extends \User
 			}
 		}
 
-		$GLOBALS['TL_LANGUAGE'] = $this->language;
 		$GLOBALS['TL_USERNAME'] = $this->username;
+		$GLOBALS['TL_LANGUAGE'] = str_replace('_', '-', $this->language);
 
 		$GLOBALS['TL_CONFIG']['showHelp'] = $this->showHelp;
 		$GLOBALS['TL_CONFIG']['useRTE'] = $this->useRTE;
@@ -372,7 +382,10 @@ class BackendUser extends \User
 			$this->filemounts = array_filter($this->filemounts);
 		}
 
-		// Convert the numeric file mounts into paths
+		// Store the numeric file mounts
+		$this->arrFilemountIds = $this->filemounts;
+
+		// Convert the file mounts into paths (backwards compatibility)
 		if (!$this->isAdmin && !empty($this->filemounts))
 		{
 			$objFiles = \FilesModel::findMultipleByIds($this->filemounts);
@@ -438,7 +451,7 @@ class BackendUser extends \User
 							$arrModules[$strGroupName]['modules'][$strModuleName] = $arrModuleConfig;
 							$arrModules[$strGroupName]['modules'][$strModuleName]['title'] = specialchars($GLOBALS['TL_LANG']['MOD'][$strModuleName][1]);
 							$arrModules[$strGroupName]['modules'][$strModuleName]['label'] = (($label = is_array($GLOBALS['TL_LANG']['MOD'][$strModuleName]) ? $GLOBALS['TL_LANG']['MOD'][$strModuleName][0] : $GLOBALS['TL_LANG']['MOD'][$strModuleName]) != false) ? $label : $strModuleName;
-							$arrModules[$strGroupName]['modules'][$strModuleName]['icon'] = ($arrModuleConfig['icon'] != '') ? sprintf(' style="background-image:url(\'%s%s\')"', TL_SCRIPT_URL, $arrModuleConfig['icon']) : '';
+							$arrModules[$strGroupName]['modules'][$strModuleName]['icon'] = ($arrModuleConfig['icon'] != '') ? sprintf(' style="background-image:url(\'%s%s\')"', TL_ASSETS_URL, $arrModuleConfig['icon']) : '';
 							$arrModules[$strGroupName]['modules'][$strModuleName]['class'] = 'navigation ' . $strModuleName;
 							$arrModules[$strGroupName]['modules'][$strModuleName]['href']  = \Environment::get('script') . '?do=' . $strModuleName;
 

@@ -6,7 +6,7 @@
  * Copyright (C) 2005-2012 Leo Feyer
  * 
  * @package Core
- * @link    http://www.contao.org
+ * @link    http://contao.org
  * @license http://www.gnu.org/licenses/lgpl-3.0.html LGPL
  */
 
@@ -22,7 +22,7 @@ namespace Contao;
  *
  * Front end module "close account".
  * @copyright  Leo Feyer 2005-2012
- * @author     Leo Feyer <http://www.contao.org>
+ * @author     Leo Feyer <http://contao.org>
  * @package    Core
  */
 class ModuleCloseAccount extends \Module
@@ -91,8 +91,8 @@ class ModuleCloseAccount extends \Module
 			// Validate the password
 			if (!$objWidget->hasErrors())
 			{
-				// The password is up to date (SHA-512)
-				if (strncmp($this->User->password, '$6$', 3) === 0)
+				// The password has been generated with crypt()
+				if (\Encryption::test($this->User->password))
 				{
 					$blnAuthenticated = (crypt($objWidget->value, $this->User->password) == $this->User->password);
 				}
@@ -146,7 +146,7 @@ class ModuleCloseAccount extends \Module
 		$this->Template->fields = $objWidget->parse();
 
 		$this->Template->formId = 'tl_close_account';
-		$this->Template->action = $this->getIndexFreeRequest();
+		$this->Template->action = \Environment::get('indexFreeRequest');
 		$this->Template->slabel = specialchars($GLOBALS['TL_LANG']['MSC']['closeAccount']);
 		$this->Template->rowLast = 'row_1 row_last odd';
 		$this->Template->tableless = $this->tableless;

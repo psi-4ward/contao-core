@@ -6,7 +6,7 @@
  * Copyright (C) 2005-2012 Leo Feyer
  * 
  * @package Core
- * @link    http://www.contao.org
+ * @link    http://contao.org
  * @license http://www.gnu.org/licenses/lgpl-3.0.html LGPL
  */
 
@@ -22,7 +22,7 @@ namespace Contao;
  *
  * Provide methods to handle themes.
  * @copyright  Leo Feyer 2005-2012
- * @author     Leo Feyer <http://www.contao.org>
+ * @author     Leo Feyer <http://contao.org>
  * @package    Core
  */
 class Theme extends \Backend
@@ -38,7 +38,7 @@ class Theme extends \Backend
 		$class = $this->User->uploader;
 
 		// See #4086
-		if (!$this->classFileExists($class))
+		if (!class_exists($class))
 		{
 			$class = 'FileUpload';
 		}
@@ -49,7 +49,7 @@ class Theme extends \Backend
 		{
 			if (!\Input::post('confirm'))
 			{
-				$arrUploaded = $objUploader->uploadTo('system/tmp', 'files');
+				$arrUploaded = $objUploader->uploadTo('system/tmp');
 
 				if (empty($arrUploaded))
 				{
@@ -495,6 +495,10 @@ class Theme extends \Backend
 
 							$intNextPid = $objModel->id;
 						}
+						else
+						{
+							$intNextPid = $objParent->id; // see #4952
+						}
 					}
 
 					$this->syncNewFolder($strFolder, $intNextPid);
@@ -671,7 +675,7 @@ class Theme extends \Backend
 						}
 
 						// Replace the file paths in multiSRC fields with their tl_files ID
-						elseif (($table == 'tl_theme' && $name == 'folders') || ($table == 'tl_module' && $name == 'multiSRC'))
+						elseif (($table == 'tl_theme' && $name == 'folders') || ($table == 'tl_module' && $name == 'multiSRC') || ($table == 'tl_layout' && $name == 'external'))
 						{
 							$tmp = deserialize($value);
 
@@ -707,6 +711,12 @@ class Theme extends \Backend
 						{
 							unset($set[$k]);
 						}
+					}
+
+					// Create the templates folder even if it is empty (see #4793)
+					if ($table == 'tl_theme' && isset($set['templates']) && strncmp($set['templates'], 'templates/', 10) === 0 && !is_dir(TL_ROOT . '/' . $set['templates']))
+					{
+						new \Folder($set['templates']);
 					}
 
 					// Update the datatbase
@@ -755,30 +765,6 @@ class Theme extends \Backend
 		$strName = preg_replace('/[^A-Za-z0-9\._-]/', '', $strName);
 		$strName = basename($strName);
 
-		// Replace the numeric folder IDs
-		$arrFolders = deserialize($objTheme->folders);
-
-		if (is_array($arrFolders) && !empty($arrFolders))
-		{
-			$objFolders = \FilesModel::findMultipleByIds($arrFolders);
-
-			if ($objFolders !== null)
-			{
-				$objTheme->folders = serialize($objFolders->fetchEach('path'));
-			}
-		}
-
-		// Replace the numeric screenshot ID
-		if ($objTheme->screenshot != '')
-		{
-			$objFile = \FilesModel::findByPk($objTheme->screenshot);
-
-			if ($objFile !== null)
-			{
-				$objTheme->screenshot = $objFile->path;
-			}
-		}
-
 		// Create a new XML document
 		$xml = new \DOMDocument('1.0', 'UTF-8');
 		$xml->formatOutput = true;
@@ -805,9 +791,14 @@ class Theme extends \Backend
 
 		if (is_array($arrFolders) && !empty($arrFolders))
 		{
-			foreach ($this->eliminateNestedPaths($arrFolders) as $strFolder)
+			$objFolders = \FilesModel::findMultipleByIds($arrFolders);
+
+			if ($objFolders !== null)
 			{
-				$this->addFolderToArchive($objArchive, $strFolder);
+				foreach ($this->eliminateNestedPaths($objFolders->fetchEach('path')) as $strFolder)
+				{
+					$this->addFolderToArchive($objArchive, $strFolder);
+				}
 			}
 		}
 
@@ -840,9 +831,9 @@ class Theme extends \Backend
 	 * Add the table tl_theme
 	 * @param \DOMDocument
 	 * @param \DOMElement
-	 * @param \Database_Result
+	 * @param \Database\Result
 	 */
-	protected function addTableTlTheme(\DOMDocument $xml, \DOMElement $tables, \Database_Result $objTheme)
+	protected function addTableTlTheme(\DOMDocument $xml, \DOMElement $tables, \Database\Result $objTheme)
 	{
 		// Add the table
 		$table = $xml->createElement('table');
@@ -858,9 +849,9 @@ class Theme extends \Backend
 	 * Add the table tl_style_sheet
 	 * @param \DOMDocument
 	 * @param \DOMElement
-	 * @param \Database_Result
+	 * @param \Database\Result
 	 */
-	protected function addTableTlStyleSheet(\DOMDocument $xml, \DOMElement $tables, \Database_Result $objTheme)
+	protected function addTableTlStyleSheet(\DOMDocument $xml, \DOMElement $tables, \Database\Result $objTheme)
 	{
 		// Add the table
 		$table = $xml->createElement('table');
@@ -904,9 +895,9 @@ class Theme extends \Backend
 	 * Add the table tl_module
 	 * @param \DOMDocument
 	 * @param \DOMElement
-	 * @param \Database_Result
+	 * @param \Database\Result
 	 */
-	protected function addTableTlModule(\DOMDocument $xml, \DOMElement $tables, \Database_Result $objTheme)
+	protected function addTableTlModule(\DOMDocument $xml, \DOMElement $tables, \Database\Result $objTheme)
 	{
 		// Add the table
 		$table = $xml->createElement('table');
@@ -929,9 +920,9 @@ class Theme extends \Backend
 	 * Add the table tl_layout
 	 * @param \DOMDocument
 	 * @param \DOMElement
-	 * @param \Database_Result
+	 * @param \Database\Result
 	 */
-	protected function addTableTlLayout(\DOMDocument $xml, \DOMElement $tables, \Database_Result $objTheme)
+	protected function addTableTlLayout(\DOMDocument $xml, \DOMElement $tables, \Database\Result $objTheme)
 	{
 		// Add the table
 		$table = $xml->createElement('table');
@@ -954,9 +945,9 @@ class Theme extends \Backend
 	 * Add a data row to the XML document
 	 * @param \DOMDocument
 	 * @param \DOMElement
-	 * @param \Database_Result
+	 * @param \Database\Result
 	 */
-	protected function addDataRow(\DOMDocument $xml, \DOMElement $table, \Database_Result $objData)
+	protected function addDataRow(\DOMDocument $xml, \DOMElement $table, \Database\Result $objData)
 	{
 		$row = $xml->createElement('row');
 		$row = $table->appendChild($row);
@@ -970,6 +961,56 @@ class Theme extends \Backend
 			if ($v === null)
 			{
 				$v = 'NULL';
+			}
+
+			// Replace the IDs of singleSRC fields with their path (see #4952)
+			elseif (($table->getAttribute('name') == 'tl_theme' && $k == 'screenshot') || ($table->getAttribute('name') == 'tl_module' && $k == 'singleSRC') || ($table->getAttribute('name') == 'tl_module' && $k == 'reg_homeDir'))
+			{
+				$objFile = \FilesModel::findByPk($v);
+
+				if ($objFile !== null)
+				{
+					// Standardize the upload path if it is not "files"
+					if ($GLOBALS['TL_CONFIG']['uploadPath'] != 'files')
+					{
+						$v = 'files/' . preg_replace('@^'.preg_quote($GLOBALS['TL_CONFIG']['uploadPath'], '@').'/@', '', $objFile->path);
+					}
+					else
+					{
+						$v = $objFile->path;
+					}
+				}
+			}
+
+			// Replace the IDs of multiSRC fields with their paths (see #4952)
+			elseif (($table->getAttribute('name') == 'tl_theme' && $k == 'folders') || ($table->getAttribute('name') == 'tl_module' && $k == 'multiSRC') || ($table->getAttribute('name') == 'tl_layout' && $k == 'external'))
+			{
+				$arrFiles = deserialize($v);
+
+				if (is_array($arrFiles) && !empty($arrFiles))
+				{
+					$objFiles = \FilesModel::findMultipleByIds($arrFiles);
+
+					if ($objFiles !== null)
+					{
+						// Standardize the upload path if it is not "files"
+						if ($GLOBALS['TL_CONFIG']['uploadPath'] != 'files')
+						{
+							$arrTmp = array();
+
+							while ($objFiles->next())
+							{
+								$arrTmp[] = 'files/' . preg_replace('@^'.preg_quote($GLOBALS['TL_CONFIG']['uploadPath'], '@').'/@', '', $objFiles->path);
+							}
+
+							$v = serialize($arrTmp);
+						}
+						else
+						{
+							$v = serialize($objFiles->fetchEach('path'));
+						}
+					}
+				}
 			}
 
 			$value = $xml->createTextNode($v);

@@ -6,7 +6,7 @@
  * Copyright (C) 2005-2012 Leo Feyer
  * 
  * @package Newsletter
- * @link    http://www.contao.org
+ * @link    http://contao.org
  * @license http://www.gnu.org/licenses/lgpl-3.0.html LGPL
  */
 
@@ -22,7 +22,7 @@ namespace Contao;
  *
  * Front end module "newsletter reader".
  * @copyright  Leo Feyer 2005-2012
- * @author     Leo Feyer <http://www.contao.org>
+ * @author     Leo Feyer <http://contao.org>
  * @package    Newsletter
  */
 class ModuleNewsletterReader extends \Module
@@ -109,6 +109,12 @@ class ModuleNewsletterReader extends \Module
 			return;
 		}
 
+		// Overwrite the page title (see #2853 and #4955)
+		if ($objNewsletter->subject != '')
+		{
+			$objPage->pageTitle = strip_tags(strip_insert_tags($objNewsletter->subject));
+		}
+
 		$arrEnclosures = array();
 
 		// Add enclosure
@@ -119,7 +125,7 @@ class ModuleNewsletterReader extends \Module
 
 			if (is_array($arrEnclosure))
 			{
-				// Send file to the browser
+				// Send the file to the browser and do not send a 404 header (see #4632)
 				if (\Input::get('file', true) != '' && in_array(\Input::get('file', true), $arrEnclosure))
 				{
 					$this->sendFileToBrowser(\Input::get('file', true));
@@ -134,14 +140,14 @@ class ModuleNewsletterReader extends \Module
 
 						if (in_array($objFile->extension, $allowedDownload))
 						{
-							$src = 'system/themes/' . $this->getTheme() . '/images/' . $objFile->icon;
+							$src = 'assets/contao/images/' . $objFile->icon;
 
 							if (($imgSize = @getimagesize(TL_ROOT . '/' . $src)) !== false)
 							{
 								$arrEnclosures[$i]['size'] = ' ' . $imgSize[3];
 							}
 
-							$arrEnclosures[$i]['icon'] = TL_FILES_URL . $src;
+							$arrEnclosures[$i]['icon'] = TL_ASSETS_URL . $src;
 							$arrEnclosures[$i]['link'] = basename($arrEnclosure[$i]);
 							$arrEnclosures[$i]['filesize'] = $this->getReadableSize($objFile->filesize);
 							$arrEnclosures[$i]['title'] = ucfirst(str_replace('_', ' ', $objFile->filename));

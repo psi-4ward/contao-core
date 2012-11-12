@@ -6,7 +6,7 @@
  * Copyright (C) 2005-2012 Leo Feyer
  * 
  * @package Calendar
- * @link    http://www.contao.org
+ * @link    http://contao.org
  * @license http://www.gnu.org/licenses/lgpl-3.0.html LGPL
  */
 
@@ -22,7 +22,7 @@ namespace Contao;
  *
  * Provide methods to get all events of a certain period from the database.
  * @copyright  Leo Feyer 2005-2012
- * @author     Leo Feyer <http://www.contao.org>
+ * @author     Leo Feyer <http://contao.org>
  * @package    Calendar
  */
 abstract class Events extends \Module
@@ -249,9 +249,9 @@ abstract class Events extends \Module
 		$arrEvent['title'] = specialchars($objEvents->title, true);
 		$arrEvent['href'] = $this->generateEventUrl($objEvents, $strUrl);
 		$arrEvent['class'] = ($objEvents->cssClass != '') ? ' ' . $objEvents->cssClass : '';
-		$arrEvent['details'] = \String::encodeEmail($objEvents->details);
 		$arrEvent['start'] = $intStart;
 		$arrEvent['end'] = $intEnd;
+		$arrEvent['details'] = '';
 
 		// Override the link target
 		if ($objEvents->source == 'external' && $objEvents->target)
@@ -273,21 +273,22 @@ abstract class Events extends \Module
 		}
 
 		// Display the "read more" button for external/article links
-		if (($objEvents->source == 'external' || $objEvents->source == 'article') && $objEvents->details == '')
+		if ($objEvents->source != 'default')
 		{
 			$arrEvent['details'] = true;
 		}
 
-		// Clean the RTE output
+		// Compile the event text
 		else
 		{
-			if ($objPage->outputFormat == 'xhtml')
+			$objElement = \ContentModel::findPublishedByPidAndTable($objEvents->id, 'tl_calendar_events');
+
+			if ($objElement !== null)
 			{
-				$arrEvent['details'] = \String::toXhtml($arrEvent['details']);
-			}
-			else
-			{
-				$arrEvent['details'] = \String::toHtml5($arrEvent['details']);
+				while ($objElement->next())
+				{
+					$arrEvent['details'] .= $this->getContentElement($objElement->id);
+				}
 			}
 		}
 
@@ -370,7 +371,7 @@ abstract class Events extends \Module
 
 				if ($objArticle !== null)
 				{
-					return ampersand($this->generateFrontendUrl($objArticle->pid, '/articles/' . ((!$GLOBALS['TL_CONFIG']['disableAlias'] && $objArticle->alias != '') ? $objArticle->alias : $objArticle->id)));
+					return ampersand($this->generateFrontendUrl($objArticle->getRelated('pid')->row(), '/articles/' . ((!$GLOBALS['TL_CONFIG']['disableAlias'] && $objArticle->alias != '') ? $objArticle->alias : $objArticle->id)));
 				}
 				break;
 		}
