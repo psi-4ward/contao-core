@@ -136,7 +136,7 @@ class Calendar extends \Frontend
 				// Get the jumpTo URL
 				if (!isset($arrUrls[$jumpTo]))
 				{
-					$objParent = \PageModel::findWithDetails($jumpTo);
+					$objParent = $this->getPageDetails($jumpTo);
 					$arrUrls[$jumpTo] = $this->generateFrontendUrl($objParent->row(), ($GLOBALS['TL_CONFIG']['useAutoItem'] ?  '/%s' : '/events/%s'), $objParent->language);
 				}
 
@@ -281,7 +281,7 @@ class Calendar extends \Frontend
 				if (!isset($arrProcessed[$objCalendar->jumpTo]))
 				{
 					$domain = \Environment::get('base');
-					$objParent = \PageModel::findWithDetails($objCalendar->jumpTo);
+					$objParent = $this->getPageDetails($objCalendar->jumpTo);
 
 					// The target page does not exist
 					if ($objParent === null)
@@ -384,7 +384,7 @@ class Calendar extends \Frontend
 		// Link to the default page
 		if ($link == '')
 		{
-			$link = sprintf($strBase . $strUrl, (($objEvent->alias != '' && !$GLOBALS['TL_CONFIG']['disableAlias']) ? $objEvent->alias : $objEvent->id));
+			$link = $strBase . sprintf($strUrl, (($objEvent->alias != '' && !$GLOBALS['TL_CONFIG']['disableAlias']) ? $objEvent->alias : $objEvent->id));
 		}
 
 		// Clean the RTE output

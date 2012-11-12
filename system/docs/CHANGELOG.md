@@ -1,58 +1,30 @@
 Contao Open Source CMS Changelog
 ================================
 
-Version 3.1.beta1 (XXXX-XX-XX)
-------------------------------
+Version 3.0.1 (2012-XX-XX)
+--------------------------
 
 ### Changed
-Moved the Transifex `.xlf` files to the `languages` folders of the modules and
-tweaked the `System::loadLanguageFile()` method to handle them (see #5005).
+Replaced the automatic copyright notice with a meta generator tag.
 
-### Changed
-Moved `Controller::getPageDetails()` to `PageModel::findWithDetails()` and
-`PageModel->loadDetails()` (see #4692).
+### Fixed
+Do not strip tags from passwords (see #4977).
 
-### Changed
-Moved `Controller::findContentElement()` to `ContentElement::findClass()` and
-`Controller::findFrontendModule()` to `Module::findClass()` (see #4684).
+### Fixed
+Correctly show the number of returned rows in the debug bar (see #4981).
 
-### Changed
-Moved `Controller::optionChecked()` and `Controller::optionSelected()` to the
-`Widget` class (see #4665).
+### Fixed
+Correctly add the RSS feed base URLs (see #4994).
 
-### Changed
-Moved `System::getIndexFreeRequest()` to `Environment::get('indexFreeRequest')`
-(see #4685).
+### Fixed
+Fixed an issue in the mediaelement.js MooTools adapter (see #4917).
 
-### Changed
-Moved `Controller::printArticleAsPdf()` to `ModuleArticle::generatePdf()`
-(see #4683).
+### Fixed
+Correctly assing the classes "first" and "last" in the (mini) calendar if the
+week does not start on Sunday (see #4970).
 
-### Changed
-Moved `Controller::generateImage()` to `Image::getHtml()` (see #4664).
-
-### Changed
-Moved `System::splitFriendlyName()` to `String::splitFriendlyEmail()` and
-made the `Email` class independent from the `System` class (see #4694).
-
-### Changed
-Moved `Controller::getBackendThemes()` to `Backend::getThemes()` (see #4694).
-
-### Changed
-Moved `Controller::getTheme()` to `Backend::getTheme()` (see #4662).
-
-### Improved
-Added the classes "toggle_desktop" and "toggle_mobile" to the desktop/mobile
-switch link (see #4975).
-
-### Improved
-Language dialects such as `fr_FR` are now supported (see #4836). Note that
-locales like `fr_FR` (used to store user languages) differ from language codes
-like `fr-FR` (used to define page languages).
-
-### Improved
-The pageTree widget is now sortable just like the fileTree widget and the custom
-and quick navigation modules consider the custom order (see #4936).
+### Fixed
+Correctly handle URL parameters appended to the empty domain (see #4972).
 
 
 Version 3.0.0 (2012-10-30)

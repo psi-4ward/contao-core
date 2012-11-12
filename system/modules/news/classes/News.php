@@ -134,7 +134,7 @@ class News extends \Frontend
 				// Get the jumpTo URL
 				if (!isset($arrUrls[$jumpTo]))
 				{
-					$objParent = \PageModel::findWithDetails($jumpTo);
+					$objParent = $this->getPageDetails($jumpTo);
 					$arrUrls[$jumpTo] = $this->generateFrontendUrl($objParent->row(), ($GLOBALS['TL_CONFIG']['useAutoItem'] ?  '/%s' : '/items/%s'), $objParent->language);
 				}
 
@@ -248,7 +248,7 @@ class News extends \Frontend
 				if (!isset($arrProcessed[$objArchive->jumpTo]))
 				{
 					$domain = \Environment::get('base');
-					$objParent = \PageModel::findWithDetails($objArchive->jumpTo);
+					$objParent = $this->getPageDetails($objArchive->jumpTo);
 
 					// The target page does not exist
 					if ($objParent === null)
@@ -317,7 +317,7 @@ class News extends \Frontend
 		}
 
 		// Link to the default page
-		return sprintf($strBase . $strUrl, (($objItem->alias != '' && !$GLOBALS['TL_CONFIG']['disableAlias']) ? $objItem->alias : $objItem->id));
+		return $strBase . sprintf($strUrl, (($objItem->alias != '' && !$GLOBALS['TL_CONFIG']['disableAlias']) ? $objItem->alias : $objItem->id));
 	}
 
 
