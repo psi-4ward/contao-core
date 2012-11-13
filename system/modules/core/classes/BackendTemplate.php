@@ -204,6 +204,11 @@ class BackendTemplate extends \Template
 				. 'cancel:"' . $GLOBALS['TL_LANG']['DP']['cancel'] . '",'
 				. 'week:"' . $GLOBALS['TL_LANG']['DP']['week'] . '"'
 			. '});'
+			. '	Meio.Mask.createMasks("Fixed",{'
+				. '"date"	: {mask: "' . Date::getMeioMask($GLOBALS['TL_CONFIG']['dateFormat']) . '"},'
+				. '"time"	: {mask: "' . Date::getMeioMask($GLOBALS['TL_CONFIG']['timeFormat']) . '"},'
+				. '"datim"	: {mask: "' . Date::getMeioMask($GLOBALS['TL_CONFIG']['datimFormat']) . '"},'
+			.'});'
 		. '});';
 	}
 }

@@ -335,6 +335,17 @@ class DataContainer extends \Backend
 					$time = '';
 					break;
 			}
+			// Meio.Mask
+			if($arrData['eval']['rgxp'])
+			{
+				$wizard .= '
+					<script>
+					window.addEvent("domready", function() {
+						document.id("ctrl_' . $objWidget->id . '").meiomask("fixed.' . $arrData['eval']['rgxp'] . '");
+					});
+					</script>
+				';
+			}
 
 			$wizard .= ' <img src="assets/mootools/datepicker/' . DATEPICKER . '/icon.gif" width="20" height="20" alt="" title="'.specialchars($GLOBALS['TL_LANG']['MSC']['datepicker']).'" id="toggle_' . $objWidget->id . '" style="vertical-align:-6px;cursor:pointer">
   <script>
@@ -348,7 +359,9 @@ class DataContainer extends \Backend
       useFadeInOut:!Browser.ie,
       startDay:' . $GLOBALS['TL_LANG']['MSC']['weekOffset'] . ',
       titleFormat:"' . $GLOBALS['TL_LANG']['MSC']['titleFormat'] . '"
-    });
+      '.
+	// reinit meio.mask when the field.value comes not from any input-event
+'    }). ' .( ($arrData['eval']['rgxp']) ? 'addEvent("select",function(){document.id("ctrl_' . $objWidget->id . '").meiomask("fixed.' . $arrData['eval']['rgxp'] . '")})' : '' ). ';
   });
   </script>';
 		}
@@ -370,6 +383,7 @@ class DataContainer extends \Backend
   });
   </script>';
 		}
+
 
 		// Add a custom wizard
 		if (is_array($arrData['wizard']))

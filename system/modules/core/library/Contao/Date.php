@@ -474,4 +474,33 @@ class Date extends \System
 
 		return preg_replace('/([a-zA-Z])/', '%$1', implode('', $chunks));
 	}
+
+
+	public static function getMeioMask($strFormat)
+	{
+		$chunks = str_split($strFormat);
+		foreach ($chunks as $k=>$v)
+		{
+			switch ($v)
+			{
+				case 'd': $chunks[$k] = '3d'; break;
+				case 'D': $chunks[$k] = 'Zzz'; break;
+				case 'j': $chunks[$k] = 'd'; break;
+				case 'N': $chunks[$k] = '9'; break;
+				case 'w': $chunks[$k] = '9'; break;
+				case 'm': $chunks[$k] = '1m'; break;
+				case 'n': $chunks[$k] = '1m'; break;
+				case 'o': $chunks[$k] = '9999'; break;
+				case 'Y': $chunks[$k] = '9999'; break;
+				case 'y': $chunks[$k] = '99'; break;
+				case 'g': $chunks[$k] = '1m'; break;
+				case 'G': $chunks[$k] = '2h'; break;
+				case 'h': $chunks[$k] = '1m'; break;
+				case 'H': $chunks[$k] = '2h'; break;
+				case 'i': $chunks[$k] = '59'; break;
+				case 's': $chunks[$k] = '59'; break;
+			}
+		}
+		return preg_replace('/([a-zA-Z])/', '$1', implode('', $chunks));
+	}
 }

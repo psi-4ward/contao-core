@@ -24,11 +24,13 @@
 <script src="<?php
   $objCombiner = new Combiner();
   $objCombiner->add('assets/mootools/core/' . MOOTOOLS . '/mootools.js', MOOTOOLS);
+  $objCombiner->add('assets/mootools/core/' . MOOTOOLS . '/Element.Forms.js', MOOTOOLS);
   $objCombiner->add('assets/mootools/colorpicker/'. COLORPICKER .'/js/mooRainbow.js', COLORPICKER);
   $objCombiner->add('assets/mootools/chosen/chosen.js');
   $objCombiner->add('assets/mootools/stylect/js/stylect.js');
   $objCombiner->add('assets/mootools/simplemodal/'. SIMPLEMODAL .'/js/simplemodal.js', SIMPLEMODAL);
   $objCombiner->add('assets/mootools/datepicker/'. DATEPICKER .'/datepicker.js', DATEPICKER);
+  $objCombiner->add('assets/mootools/Meio.Mask/'. MEIOMASK .'/Meio.Mask.js', MEIOMASK);
   $objCombiner->add('assets/mootools/mootao/Mootao.js');
   $objCombiner->add('assets/contao/js/core.js');
   $objCombiner->add('system/themes/'. $this->theme .'/hover.js');

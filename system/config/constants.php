@@ -35,6 +35,7 @@ define('DATEPICKER', '2.1.1');
 define('MEDIABOX', '1.4.6');
 define('SIMPLEMODAL', '1.2');
 define('SLIMBOX', '1.71');
+define('MEIOMASK', '2.0.7');
 
 
 /**
