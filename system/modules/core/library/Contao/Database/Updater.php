@@ -761,6 +761,26 @@ class Updater extends \Controller
 		$backup = $field . '_backup';
 		$objDatabase = \Database::getInstance();
 
+		$desc = $objDatabase->query('DESC '.$table.' '.$field);
+		if($desc->numRows && $desc->Type === 'binary(16)')
+		{
+			$cnt = $objDatabase->prepare("
+				SELECT count(id) as cnt
+				FROM `$table`
+				WHERE `$field` IS NOT NULL
+					AND (
+						CAST(`$field` AS CHAR) LIKE ?
+						OR CAST(`$field` AS SIGNED) > 0
+					)
+			")->execute($GLOBALS['TL_CONFIG']['uploadPath'].'/%')->cnt;
+
+			if($cnt === 0)
+			{
+				// Its already a binary(16) field and there are no ID or Path values
+				return;
+			}
+		}
+
 		// Backup the original column and then change the column type
 		if (!$objDatabase->fieldExists($backup, $table, true))
 		{
@@ -774,22 +794,32 @@ class Updater extends \Controller
 
 		while ($objRow->next())
 		{
+			if(\Validator::isUuid($objRow->$field))
+			{
+				// Its already a UIID, do nothing
+				continue;
+			}
+
 			// Numeric ID to UUID
 			if (is_numeric($objRow->$backup))
 			{
 				$objFile = \FilesModel::findByPk($objRow->$backup);
-
-				$objDatabase->prepare("UPDATE $table SET $field=? WHERE id=?")
-							->execute($objFile->uuid, $objRow->id);
+				if($objFile)
+				{
+					$objDatabase->prepare("UPDATE $table SET $field=? WHERE id=?")
+								->execute($objFile->uuid, $objRow->id);
+				}
 			}
 
 			// Path to UUID
 			else
 			{
 				$objFile = \FilesModel::findByPath($objRow->$backup);
-
-				$objDatabase->prepare("UPDATE $table SET $field=? WHERE id=?")
+				if($objFile)
+				{
+					$objDatabase->prepare("UPDATE $table SET $field=? WHERE id=?")
 							->execute($objFile->uuid, $objRow->id);
+				}
 			}
 		}
 	}
@@ -805,6 +835,21 @@ class Updater extends \Controller
 	{
 		$backup = $field . '_backup';
 		$objDatabase = \Database::getInstance();
+
+		// check if the field already holds UUIDs
+		$objRow = $objDatabase->execute("SELECT `$field` FROM `$table`");
+		while($objRow->next())
+		{
+			$arrPaths = deserialize($objRow->$field, true);
+			foreach($arrPaths as $v)
+			{
+				if(\Validator::isUuid($v))
+				{
+					// field values already converted
+					return;
+				}
+			}
+		}
 
 		// Backup the original column and then change the column type
 		if (!$objDatabase->fieldExists($backup, $table, true))
@@ -828,18 +873,30 @@ class Updater extends \Controller
 
 			foreach ($arrPaths as $k=>$v)
 			{
+				// Its already a UIID, do nothing
+				if(\Validator::isUuid($v))
+				{
+					continue;
+				}
+
 				// Numeric ID to UUID
 				if (is_numeric($v))
 				{
 					$objFile = \FilesModel::findByPk($v);
-					$arrPaths[$k] = $objFile->uuid;
+					if($objFile)
+					{
+						$arrPaths[$k] = $objFile->uuid;
+					}
 				}
 
 				// Path to UUID
 				else
 				{
 					$objFile = \FilesModel::findByPath($v);
-					$arrPaths[$k] = $objFile->uuid;
+					if($objFile)
+					{
+						$arrPaths[$k] = $objFile->uuid;
+					}
 				}
 			}
 
@@ -860,6 +917,21 @@ class Updater extends \Controller
 		$backup = $field . '_backup';
 		$objDatabase = \Database::getInstance();
 
+		// check if the field already holds UUIDs
+		$objRow = $objDatabase->execute("SELECT `$field` FROM `$table`");
+		while($objRow->next())
+		{
+			$arrPaths = explode(',', $objRow->$field);
+			foreach($arrPaths as $v)
+			{
+				if(\Validator::isUuid($v))
+				{
+					// field values already converted
+					return;
+				}
+			}
+		}
+
 		// Backup the original column and then change the column type
 		if (!$objDatabase->fieldExists($backup, $table, true))
 		{
@@ -877,18 +949,30 @@ class Updater extends \Controller
 
 			foreach ($arrPaths as $k=>$v)
 			{
+				// Its already a UIID, do nothing
+				if(\Validator::isUuid($v))
+				{
+					continue;
+				}
+
 				// Numeric ID to UUID
 				if (is_numeric($v))
 				{
 					$objFile = \FilesModel::findByPk($v);
-					$arrPaths[$k] = $objFile->uuid;
+					if($objFile)
+					{
+						$arrPaths[$k] = $objFile->uuid;
+					}
 				}
 
 				// Path to UUID
 				else
 				{
 					$objFile = \FilesModel::findByPath($v);
-					$arrPaths[$k] = $objFile->uuid;
+					if($objFile)
+					{
+						$arrPaths[$k] = $objFile->uuid;
+					}
 				}
 			}
 
